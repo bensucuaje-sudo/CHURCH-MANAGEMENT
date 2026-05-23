@@ -52,28 +52,31 @@ export default function TitheTracker({
 
   // Fund Fields (numeric states)
   const [tithe, setTithe] = useState<number>(0);
-  const [copMission, setCopMission] = useState<number>(0);
+  const [copInput, setCopInput] = useState<number>(0);
   const [harvestIngathering, setHarvestIngathering] = useState<number>(0);
   const [hopeRadio, setHopeRadio] = useState<number>(0);
   const [sulads, setSulads] = useState<number>(0);
   const [specifiedOffering, setSpecifiedOffering] = useState<number>(0);
-  const [copChurch, setCopChurch] = useState<number>(0);
+  const [specifiedOfferingLabel, setSpecifiedOfferingLabel] = useState('Specified Offering');
   const [buildingFund, setBuildingFund] = useState<number>(0);
+
+  // Derived COP parts (50-50 split between Mission and Church)
+  const copMission = copInput * 0.5;
+  const copChurch = copInput * 0.5;
 
   // Computed totals for categories
   const totalMissionFunds = useMemo(() => {
-    return (tithe || 0) + (copMission || 0) + (harvestIngathering || 0) + (hopeRadio || 0) + (sulads || 0) + (specifiedOffering || 0);
+    return (tithe || 0) + copMission + (harvestIngathering || 0) + (hopeRadio || 0) + (sulads || 0) + (specifiedOffering || 0);
   }, [tithe, copMission, harvestIngathering, hopeRadio, sulads, specifiedOffering]);
 
   const totalChurchFunds = useMemo(() => {
-    return (copChurch || 0) + (buildingFund || 0);
+    return copChurch + (buildingFund || 0);
   }, [copChurch, buildingFund]);
 
   // Live total sum calculation
   const totalSum = useMemo(() => {
-    // subtract one COP portion to prevent double counting since COP in mission and COP in church are synchronized
-    return totalMissionFunds + totalChurchFunds - (copMission || 0);
-  }, [totalMissionFunds, totalChurchFunds, copMission]);
+    return totalMissionFunds + totalChurchFunds;
+  }, [totalMissionFunds, totalChurchFunds]);
 
   // Dynamic capping logic to make sure the live sum doesn't exceed amountToInput
   const getCappedValue = (fieldName: string, value: number): number => {
@@ -117,12 +120,12 @@ export default function TitheTracker({
     setPaymentMethod('Cash');
     setNotes('');
     setTithe(0);
-    setCopMission(0);
+    setCopInput(0);
     setHarvestIngathering(0);
     setHopeRadio(0);
     setSulads(0);
     setSpecifiedOffering(0);
-    setCopChurch(0);
+    setSpecifiedOfferingLabel('Specified Offering');
     setBuildingFund(0);
     setAmountToInput(0);
     setIsLogOpen(true);
@@ -166,7 +169,8 @@ export default function TitheTracker({
       hopeRadio: Number(hopeRadio) || 0,
       sulads: Number(sulads) || 0,
       specifiedOffering: Number(specifiedOffering) || 0,
-      copChurch: Number(copChurch) || 0
+      copChurch: Number(copChurch) || 0,
+      specifiedOfferingName: specifiedOfferingLabel.trim() || 'Specified Offering'
     });
 
     setIsLogOpen(false);
@@ -626,12 +630,24 @@ export default function TitheTracker({
                           step="0.01"
                           placeholder="0.00"
                           className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-slate-700 bg-white"
-                          value={copMission || ''}
+                          value={copInput || ''}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value) || 0;
-                            setCopMission(val);
-                            setCopChurch(val);
+                            setCopInput(val);
                           }}
+                        />
+                      </div>
+
+                      {/* COP (50%) - Mission Share */}
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">COP (50%)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          disabled
+                          placeholder="0.00"
+                          className="w-full px-3 py-1.5 border border-slate-150 rounded-md text-xs font-mono text-slate-400 bg-slate-50/80 cursor-not-allowed"
+                          value={copMission > 0 ? copMission.toFixed(2) : '0.00'}
                         />
                       </div>
 
@@ -679,7 +695,15 @@ export default function TitheTracker({
 
                       {/* Specified Offering */}
                       <div>
-                        <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">Specified Offering</label>
+                        <div className="flex items-center gap-1 mb-1">
+                          <input
+                            type="text"
+                            value={specifiedOfferingLabel}
+                            onChange={(e) => setSpecifiedOfferingLabel(e.target.value)}
+                            className="block w-full text-[10px] uppercase font-bold tracking-wider text-slate-500 bg-transparent border-b border-dashed border-slate-200 hover:border-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0 py-0 px-0.5"
+                            placeholder="Specified Offering"
+                          />
+                        </div>
                         <input
                           type="number"
                           min="0"
@@ -705,24 +729,18 @@ export default function TitheTracker({
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      {/* COP Church */}
+                      {/* COP (50%) - Church Share */}
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500">COP</label>
-                          <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Sparkles size={8} /> Auto Plan</span>
+                          <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500">COP (50%)</label>
                         </div>
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                          type="text"
+                          readOnly
+                          disabled
                           placeholder="0.00"
-                          className="w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-slate-700 bg-white"
-                          value={copChurch || ''}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setCopChurch(val);
-                            setCopMission(val);
-                          }}
+                          className="w-full px-3 py-1.5 border border-slate-150 rounded-md text-xs font-mono text-slate-400 bg-slate-50/80 cursor-not-allowed"
+                          value={copChurch > 0 ? copChurch.toFixed(2) : '0.00'}
                         />
                       </div>
 

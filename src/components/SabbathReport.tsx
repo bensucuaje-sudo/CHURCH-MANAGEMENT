@@ -455,14 +455,10 @@ export default function SabbathReport({ contributions, members, preferences }: S
                 <div className="space-y-2.5">
                   {titheAllocations.map(alloc => (
                     <div key={alloc.id} className="space-y-1">
-                      <div className="flex justify-between text-[11px]">
-                        <span></span>
+                      <div className="flex justify-end text-[11px]">
                         <span className="font-mono text-slate-705 font-bold leading-none">
-                          {preferences.currency} {alloc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({alloc.percentage}%)
+                          {preferences.currency} {alloc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-blue-600 h-full" style={{ width: `${alloc.percentage}%` }}></div>
                       </div>
                     </div>
                   ))}
@@ -490,7 +486,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
                       <div className="space-y-1">
                         <div className="flex justify-between text-[11px]">
                           <span className="font-bold text-slate-800 font-sans leading-tight">
-                            COP
+                            COP (50%)
                           </span>
                           <span className="font-mono text-slate-705 font-bold leading-none">
                             {preferences.currency} {stats.copChurchSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({copChurchPercent}%)

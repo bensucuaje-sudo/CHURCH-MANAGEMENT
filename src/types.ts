@@ -50,6 +50,7 @@ export interface Contribution {
   sulads?: number;
   specifiedOffering?: number;
   copChurch?: number;
+  specifiedOfferingName?: string;
 }
 
 export interface ChurchPreferences {

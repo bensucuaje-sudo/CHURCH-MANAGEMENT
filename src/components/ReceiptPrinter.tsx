@@ -448,7 +448,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                         {contribution.specifiedOffering && contribution.specifiedOffering > 0 ? (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
-                              <div className="font-bold text-slate-700">Specified Offering</div>
+                              <div className="font-bold text-slate-700">{contribution.specifiedOfferingName || "Specified Offering"}</div>
                             </td>
                             <td className="py-2 pr-2 text-right font-mono text-slate-800">
                               {preferences.currency} {contribution.specifiedOffering.toFixed(2)}
