@@ -29,6 +29,24 @@ interface SabbathReportProps {
   preferences: ChurchPreferences;
 }
 
+// Custom Philippine Peso (₱) Icon matching Lucide style
+const PesoSign = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M6 21V3h6a5 5 0 0 1 0 10H6M3 7h10M3 10h10" />
+  </svg>
+);
+
 // Helper to determine the Saturday (Sabbath) date of any YYYY-MM-DD input
 const getSabbathDate = (dateStr: string): string => {
   if (!dateStr || !dateStr.includes('-')) return dateStr;
@@ -382,7 +400,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
                 {/* Total Collections */}
                 <div className="p-4 bg-slate-50 border border-slate-150 rounded-xl relative overflow-hidden printable-card">
                   <div className="text-slate-400 absolute right-3 top-3">
-                    <DollarSign size={18} />
+                    <PesoSign size={18} />
                   </div>
                   <p className="text-[9px] text-slate-450 font-black uppercase tracking-wider">Gross Collections</p>
                   <p className="text-base font-black text-slate-900 font-mono mt-1">
@@ -393,38 +411,26 @@ export default function SabbathReport({ contributions, members, preferences }: S
 
                 {/* Tithes */}
                 <div className="p-4 bg-blue-50/40 border border-blue-100 rounded-xl relative overflow-hidden printable-card">
-                  <div className="text-blue-500 absolute right-3 top-3">
-                    <ShieldCheck size={18} />
-                  </div>
-                  <p className="text-[9px] text-blue-900/60 font-black uppercase tracking-wider">Tithe Devotion (10%)</p>
+                  <p className="text-[9px] text-blue-900/60 font-black uppercase tracking-wider">TOTAL TITHES</p>
                   <p className="text-base font-black text-blue-900 font-mono mt-1">
                     {preferences.currency} {stats.titheSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <span className="text-[9px] text-blue-500 mt-0.5 inline-block font-sans font-medium">Systematic Worldwide Plan</span>
                 </div>
 
                 {/* Combined Offerings */}
                 <div className="p-4 bg-emerald-50/40 border border-emerald-100 rounded-xl relative overflow-hidden printable-card">
-                  <div className="text-emerald-500 absolute right-3 top-3">
-                    <BookmarkCheck size={18} />
-                  </div>
-                  <p className="text-[9px] text-emerald-900/60 font-black uppercase tracking-wider">Combined Offerings</p>
+                  <p className="text-[9px] text-emerald-900/60 font-black uppercase tracking-wider">TOTAL COP</p>
                   <p className="text-base font-black text-emerald-900 font-mono mt-1">
                     {preferences.currency} {stats.combinedOfferingSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <span className="text-[9px] text-emerald-500 mt-0.5 inline-block font-sans font-medium">Subject to local division ratios</span>
                 </div>
 
                 {/* Other Funds */}
                 <div className="p-4 bg-amber-50/30 border border-amber-100 rounded-xl relative overflow-hidden printable-card">
-                  <div className="text-amber-600 absolute right-3 top-3">
-                    <Building size={18} />
-                  </div>
-                  <p className="text-[9px] text-amber-900/60 font-black uppercase tracking-wider">Restricted Local Funds</p>
+                  <p className="text-[9px] text-amber-900/60 font-black uppercase tracking-wider">OTHER LOCAL FUNDS</p>
                   <p className="text-base font-black text-amber-900 font-mono mt-1">
                     {preferences.currency} {(stats.buildingFundSum + stats.missionsSum + stats.youthSum + stats.othersSum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
-                  <span className="text-[9px] text-amber-650 mt-0.5 inline-block font-sans font-medium">Building, Youth, Missions</span>
                 </div>
               </div>
             </div>
@@ -506,167 +512,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
 
             </div>
 
-            {/* RESTRICTED AND PAYMENT INSTRUMENT AUDITS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              
-              {/* Specialized / Restricted funds registers */}
-              <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
-                <div className="border-b border-slate-100 pb-2">
-                  <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
-                    <Building size={13} className="text-amber-600" />
-                    Restricted Fund Allocations registers
-                  </h4>
-                </div>
 
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between border-b border-slate-50 py-1 font-medium text-slate-650">
-                    <span className="font-bold">🏰 Building & Development Fund</span>
-                    <span className="font-mono text-slate-800">{preferences.currency} {stats.buildingFundSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-50 py-1 font-medium text-slate-650">
-                    <span className="font-bold">🌍 Global Missions & Ingatherings</span>
-                    <span className="font-mono text-slate-800">{preferences.currency} {stats.missionsSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-50 py-1 font-medium text-slate-650">
-                    <span className="font-bold">🎈 Youth Ministries & Campouts</span>
-                    <span className="font-mono text-slate-800">{preferences.currency} {stats.youthSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-50 py-1 font-medium text-slate-650">
-                    <span className="font-bold">📦 Local Church Others / Specified</span>
-                    <span className="font-mono text-slate-800">{preferences.currency} {stats.othersSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between pt-1.5 font-bold text-slate-900 border-t border-slate-205">
-                    <span>Aggregate Restricted Funds</span>
-                    <span className="font-mono">{preferences.currency} {(stats.buildingFundSum + stats.missionsSum + stats.youthSum + stats.othersSum).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Methods Breakdown / Denominations preparation */}
-              <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
-                <div className="border-b border-slate-100 pb-2">
-                  <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
-                    <Wallet size={13} className="text-sky-600" />
-                    Vault Deposit Settlement Summary
-                  </h4>
-                </div>
-
-                <div className="space-y-2 divide-y divide-slate-50 text-xs">
-                  {(Object.entries(stats.paymentMethods) as Array<[string, { amount: number; count: number }]>).map(([method, data]) => (
-                    <div key={method} className="flex justify-between py-1 font-medium text-slate-650 first:pt-0">
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${
-                          method === 'Cash' ? 'bg-emerald-500' :
-                          method === 'Check' ? 'bg-indigo-500' :
-                          method === 'Bank Transfer' ? 'bg-sky-500' :
-                          method === 'Mobile Payment' ? 'bg-rose-500' : 'bg-slate-400'
-                        }`} />
-                        {method} <span className="text-[10px] text-slate-400 font-normal">({data.count} receipts)</span>
-                      </span>
-                      <span className="font-mono font-bold text-slate-800">
-                        {preferences.currency} {data.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            {/* CHECKS SETTLEMENT LIST IF APPLICABLE */}
-            {stats.checksList.length > 0 && (
-              <div className="border border-slate-100 rounded-xl p-4 space-y-2 printable-card">
-                <h4 className="text-[10px] font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
-                  🔑 Checks Audits Registers
-                </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-[11px] text-left border-collapse printable-table">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="py-1 px-2 font-bold text-slate-700">Receipt No</th>
-                        <th className="py-1 px-2 font-bold text-slate-700">Member</th>
-                        <th className="py-1 px-2 font-bold text-slate-700">Check Reference / Memo Detail</th>
-                        <th className="py-1 px-2 font-bold text-slate-700 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {stats.checksList.map((check, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="py-1.5 px-2 font-mono text-slate-500 font-bold">{check.receiptNo}</td>
-                          <td className="py-1.5 px-2 font-bold text-slate-700">{check.member}</td>
-                          <td className="py-1.5 px-2 text-slate-500 italic">{check.details}</td>
-                          <td className="py-1.5 px-2 font-mono font-bold text-indigo-900 text-right">{preferences.currency} {check.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* PRIMARY ENVELOPES CHRONOLOGICAL LEDGER */}
-            <div className="space-y-3 pt-2">
-              <h3 className="text-[10px] uppercase font-black text-slate-400 tracking-widest flex items-center gap-1.5">
-                <FileSpreadsheet size={11} className="text-blue-500" />
-                Ledger breakdown (Chronological Envelopes Register)
-              </h3>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse border border-slate-200 printable-table" id="sabbath-ledger-table">
-                  <thead>
-                    <tr className="bg-slate-100 border-b-2 border-slate-250 text-[10px] font-extrabold uppercase text-slate-700 select-none">
-                      <th className="py-2 px-3 font-semibold text-center w-14">Rec. No</th>
-                      <th className="py-2 px-3 font-semibold">Steward / Contributor</th>
-                      <th className="py-2 px-3 font-semibold text-right">Tithe (10%)</th>
-                      <th className="py-2 px-3 font-semibold text-right">COP Share</th>
-                      <th className="py-2 px-3 font-semibold text-right">Local Funds</th>
-                      <th className="py-2 px-3 font-semibold text-right w-24">Receipt Gross</th>
-                      <th className="py-2 px-3 font-semibold text-center w-16">Method</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 text-xs">
-                    {sortedLedger.map((c) => {
-                      const localFundsAmt = (c.buildingFund || 0) + (c.missions || 0) + (c.youth || 0) + (c.others || 0);
-                      return (
-                        <tr key={c.id} className="hover:bg-slate-50/70 transition">
-                          <td className="py-2 px-3 font-mono font-bold text-center text-slate-500">{c.receiptNo}</td>
-                          <td className="py-2 px-3 font-bold text-slate-800">
-                            {c.memberName}
-                            {c.notes && (
-                              <p className="text-[9px] text-slate-400 font-normal italic mt-0.5 compact-text">
-                                Memo: {c.notes}
-                              </p>
-                            )}
-                          </td>
-                          <td className="py-2 px-3 font-mono font-semibold text-right text-slate-650">
-                            {c.tithe > 0 ? c.tithe.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                          </td>
-                          <td className="py-2 px-3 font-mono font-semibold text-right text-slate-650">
-                            {c.combinedOffering > 0 ? c.combinedOffering.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                          </td>
-                          <td className="py-2 px-3 font-mono font-semibold text-right text-slate-650">
-                            {localFundsAmt > 0 ? localFundsAmt.toLocaleString(undefined, { minimumFractionDigits: 2 }) : '-'}
-                          </td>
-                          <td className="py-2 px-3 font-mono font-bold text-right text-slate-900 bg-slate-50/40">
-                            {preferences.currency} {c.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-3 text-center text-[10px] font-bold text-slate-500">{c.paymentMethod}</td>
-                        </tr>
-                      );
-                    })}
-                    {/* Sum line */}
-                    <tr className="bg-slate-50 border-t-2 border-slate-250 font-black text-slate-900 border-b border-slate-300">
-                      <td colSpan={2} className="py-2.5 px-3 text-left uppercase tracking-wide">TOTAL CONSOLIDATION ALL ENTRIES</td>
-                      <td className="py-2.5 px-3 font-mono text-right text-blue-700 bg-blue-50/20">{preferences.currency} {stats.titheSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="py-2.5 px-3 font-mono text-right text-emerald-700 bg-emerald-50/20">{preferences.currency} {stats.combinedOfferingSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="py-2.5 px-3 font-mono text-right text-amber-700 bg-amber-50/10">{preferences.currency} {(stats.buildingFundSum + stats.missionsSum + stats.youthSum + stats.othersSum).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="py-2.5 px-3 font-mono text-right bg-slate-100 font-black">{preferences.currency} {stats.totalSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                      <td className="py-2.5 px-3"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
             {/* OFFICIAL AUTHORIZED AUDIT SIGNATURE LINES BLOCK */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-dashed border-slate-300 mt-12" id="signatures-block">
