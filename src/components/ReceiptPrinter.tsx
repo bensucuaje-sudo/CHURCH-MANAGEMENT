@@ -286,12 +286,11 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
           }
 
           .a6-receipt-icon {
-            width: 18px !important;
-            height: 22px !important;
-            border-radius: 3px !important;
-            font-size: 8px !important;
+            width: 12mm !important;
+            height: 14mm !important;
+            border-radius: 2mm !important;
             margin-top: 0 !important;
-            margin-bottom: 1px !important;
+            margin-bottom: 2mm !important;
           }
 
           .a6-receipt-watermark {

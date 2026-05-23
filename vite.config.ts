@@ -24,7 +24,7 @@ export default defineConfig(() => {
           theme_color: "#1e40af",
           icons: [
             {
-              src: 'sda-logo.png',
+              src: 'icon-512.png',
               sizes: '192x192',
               type: 'image/png'
             },
