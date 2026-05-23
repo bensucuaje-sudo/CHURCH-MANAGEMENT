@@ -230,13 +230,25 @@ export default function SabbathReport({ contributions, members, preferences }: S
             color: black !important;
             font-size: 11px !important;
           }
-          /* Hide all standard elements in the outer DOM shell */
-          #sidebar, #app-header, #app-footer, #read-only-banner, #analytics-section > div:first-child, #analytics-section > div:nth-child(2), #sidebar-install-widget, #tithe-tracker-section > *:not(#sabbath-report-modal) {
-            display: none !important;
+          
+          /* Hide EVERYTHING in the page during print by default */
+          body * {
+            visibility: hidden !important;
           }
+          
+          /* Make ONLY the Sabbath Report modal and its descendants visible */
+          #sabbath-report-modal,
+          #sabbath-report-modal * {
+            visibility: visible !important;
+          }
+          
+          /* Pull the modal out of the normal layout flow and start at the top-left of the first printable page */
           #sabbath-report-modal {
-            position: fixed !important;
-            inset: 0 !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -244,31 +256,47 @@ export default function SabbathReport({ contributions, members, preferences }: S
             overflow: visible !important;
             z-index: 9999999 !important;
           }
+          
           #sabbath-report-modal-content {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
             border: none !important;
             box-shadow: none !important;
             max-height: none !important;
             margin: 0 !important;
             padding: 0 !important;
-            width: 100% !important;
-          }
-          /* Eliminate scroll layouts and paddings of workspace wrapper */
-          #workspace-canvas {
-            padding: 0 !important;
+            display: block !important;
             overflow: visible !important;
+          }
+          
+          /* Force page and outer parent wrappers of modal to overflow normally */
+          html, body, #church-app-root, #main-content-panel, #workspace-canvas, #tithe-tracker-section {
             height: auto !important;
+            overflow: visible !important;
             background: white !important;
           }
+          
+          /* Hide non-printable elements completely to prevent blank margins/spacers */
+          .non-printable, 
+          .print\\:hidden,
+          button,
+          [class*="print:hidden"] {
+            display: none !important;
+          }
+          
           /* Fill report completely */
           #sabbath-report-view {
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            display: block !important;
+            width: 100% !important;
           }
-          .non-printable {
-            display: none !important;
-          }
+          
           .printable-card {
             border: 1px solid #e2e8f0 !important;
             box-shadow: none !important;
@@ -276,11 +304,13 @@ export default function SabbathReport({ contributions, members, preferences }: S
             border-radius: 4px !important;
             padding: 12px !important;
           }
+          
           .printable-header {
             border-bottom: 2px solid #0f172a !important;
             padding-bottom: 12px !important;
             margin-bottom: 20px !important;
           }
+          
           .printable-table th {
             background-color: #f1f5f9 !important;
             color: #0f172a !important;
@@ -289,11 +319,14 @@ export default function SabbathReport({ contributions, members, preferences }: S
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
+          
           .printable-table td {
             border-bottom: 1px solid #e2e8f0 !important;
           }
+          
           .compact-text {
             font-size: 10px !important;
+            color: black !important;
           }
         }
       `}</style>

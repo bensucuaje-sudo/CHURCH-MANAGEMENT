@@ -146,7 +146,7 @@ export default function TitheTracker({
       receiptNo,
       paymentMethod,
       tithe: Number(tithe) || 0,
-      combinedOffering: Number(copMission) || 0,
+      combinedOffering: Number(copInput) || 0,
       buildingFund: Number(buildingFund) || 0,
       missions: Number(harvestIngathering) || 0,
       youth: (Number(hopeRadio) || 0) + (Number(sulads) || 0),
@@ -193,8 +193,10 @@ export default function TitheTracker({
       acc.tithe += c.tithe;
       acc.combinedOffering += c.combinedOffering;
       acc.total += c.total;
+      acc.copMission += c.copMission ?? (c.combinedOffering * 0.5);
+      acc.copChurch += c.copChurch ?? (c.combinedOffering * 0.5);
       return acc;
-    }, { tithe: 0, combinedOffering: 0, total: 0 });
+    }, { tithe: 0, combinedOffering: 0, total: 0, copMission: 0, copChurch: 0 });
   }, [filteredContributions]);
 
   const formatDateReadable = (dateStr: string) => {
@@ -322,15 +324,14 @@ export default function TitheTracker({
                   <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total Members COP</span>
                   <span className="text-xs font-mono font-bold text-emerald-600 block">{preferences.currency} {filteredTotals.combinedOffering.toFixed(2)}</span>
                   <div className="border-t border-slate-100/80 pt-1 mt-1 space-y-0.5 text-[8px] text-left text-slate-500">
-                    {preferences.combinedOfferingAllocations.map(alloc => {
-                      const amount = filteredTotals.combinedOffering * (alloc.percentage / 100);
-                      return (
-                        <div key={alloc.id} className="flex justify-between gap-1.5 font-sans">
-                          <span className="truncate max-w-[85px] font-bold text-slate-400 block uppercase" title={alloc.name}>{alloc.name}</span>
-                          <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{preferences.currency}{amount.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
+                    <div className="flex justify-between gap-1.5 font-sans">
+                      <span className="truncate max-w-[85px] font-bold text-slate-400 block uppercase" title="Mission Funds">Mission Funds</span>
+                      <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{preferences.currency}{filteredTotals.copMission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between gap-1.5 font-sans">
+                      <span className="truncate max-w-[85px] font-bold text-slate-400 block uppercase" title="Church Funds">Church Funds</span>
+                      <span className="font-mono font-bold text-slate-700 whitespace-nowrap">{preferences.currency}{filteredTotals.copChurch.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-150/80 shadow-3xs text-center min-w-[90px]">
@@ -405,12 +406,14 @@ export default function TitheTracker({
                           <div className="flex flex-col space-y-1">
                             <span className="text-emerald-600 font-bold">{preferences.currency} {contrib.combinedOffering.toFixed(2)}</span>
                             <div className="pt-1 border-t border-slate-100/50 space-y-0.5">
-                              {preferences.combinedOfferingAllocations.map(alloc => (
-                                <div key={alloc.id} className="flex justify-between items-center gap-2 text-[8px] leading-tight text-slate-400 font-sans">
-                                  <span className="truncate max-w-[80px]" title={alloc.name}>{alloc.name}</span>
-                                  <span className="font-mono whitespace-nowrap">{preferences.currency}{(contrib.combinedOffering * (alloc.percentage / 100)).toFixed(2)}</span>
-                                </div>
-                              ))}
+                              <div className="flex justify-between items-center gap-2 text-[8px] leading-tight text-slate-400 font-sans">
+                                <span className="truncate max-w-[80px]" title="Mission Funds">Mission Funds</span>
+                                <span className="font-mono whitespace-nowrap">{preferences.currency}{(contrib.copMission ?? (contrib.combinedOffering * 0.5)).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center gap-2 text-[8px] leading-tight text-slate-400 font-sans">
+                                <span className="truncate max-w-[80px]" title="Church Funds">Church Funds</span>
+                                <span className="font-mono whitespace-nowrap">{preferences.currency}{(contrib.copChurch ?? (contrib.combinedOffering * 0.5)).toFixed(2)}</span>
+                              </div>
                             </div>
                           </div>
                         ) : (
