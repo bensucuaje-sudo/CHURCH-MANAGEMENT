@@ -136,7 +136,7 @@ export default function App() {
   };
 
   // 2. Navigation & Interface States
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config'>('dashboard');
   const [currentReceiptContribution, setCurrentReceiptContribution] = useState<Contribution | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     return safeJsonParse('church_isAdmin', false); // Safe default to false (View-Only Mode)
@@ -299,19 +299,7 @@ export default function App() {
             }`}
           >
             <Settings size={14} className={activeTab === 'config' ? 'text-blue-500' : 'text-slate-400'} />
-            Offering Plan Setup
-          </button>
-
-          <button
-            onClick={() => setActiveTab('admin')}
-            className={`w-full flex items-center gap-3 px-6 py-2.5 text-xs font-semibold cursor-pointer transition-all ${
-              activeTab === 'admin'
-                ? 'bg-slate-800 text-white border-l-4 border-blue-500'
-                : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
-            }`}
-          >
-            <Database size={14} className={activeTab === 'admin' ? 'text-blue-500' : 'text-slate-400'} />
-            Cloud Data Backups
+            System Management
           </button>
 
           {isInstallable && (
@@ -493,16 +481,9 @@ export default function App() {
               onUpdatePreferences={handleUpdatePreferences} 
               onClearAllData={handleClearAllData}
               isAdmin={isAdmin}
-            />
-          )}
-
-          {activeTab === 'admin' && (
-            <AdminPortal 
               members={members}
               contributions={contributions}
-              preferences={preferences}
               onImportData={handleImportBackup}
-              isAdmin={isAdmin}
             />
           )}
 

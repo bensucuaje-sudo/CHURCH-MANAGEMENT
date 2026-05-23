@@ -4,17 +4,29 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { ChurchPreferences, CombinedOfferingAllocation } from '../types';
+import { ChurchPreferences, CombinedOfferingAllocation, Member, Contribution } from '../types';
 import { Settings, ShieldCheck, HeartCrack, Plus, Trash2, HelpCircle } from 'lucide-react';
+import AdminPortal from './AdminPortal';
 
 interface ChurchConfigProps {
   preferences: ChurchPreferences;
   onUpdatePreferences: (preferences: ChurchPreferences) => void;
   onClearAllData: () => void;
   isAdmin?: boolean;
+  members: Member[];
+  contributions: Contribution[];
+  onImportData: (data: { members: Member[]; contributions: Contribution[]; preferences: ChurchPreferences }) => void;
 }
 
-export default function ChurchConfig({ preferences, onUpdatePreferences, onClearAllData, isAdmin = true }: ChurchConfigProps) {
+export default function ChurchConfig({ 
+  preferences, 
+  onUpdatePreferences, 
+  onClearAllData, 
+  isAdmin = true,
+  members,
+  contributions,
+  onImportData
+}: ChurchConfigProps) {
   // Config state
   const [churchName, setChurchName] = useState(preferences.churchName);
   const [churchAddress, setChurchAddress] = useState(preferences.churchAddress);
@@ -278,6 +290,17 @@ export default function ChurchConfig({ preferences, onUpdatePreferences, onClear
 
         </div>
 
+      </div>
+
+      {/* Cloud Backup & Restore Integrated Portal */}
+      <div className="pt-6 border-t border-slate-100">
+        <AdminPortal 
+          members={members}
+          contributions={contributions}
+          preferences={preferences}
+          onImportData={onImportData}
+          isAdmin={isAdmin}
+        />
       </div>
     </div>
   );
