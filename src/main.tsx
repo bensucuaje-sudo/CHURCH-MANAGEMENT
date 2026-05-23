@@ -3,18 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Register PWA Service Worker on load
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(reg => {
-        console.log('ServiceWorker registration successful with scope: ', reg.scope);
-      })
-      .catch(err => {
-        console.log('ServiceWorker registration failed: ', err);
-      });
-  });
-}
+import { registerSW } from 'virtual:pwa-register';
+
+// Register PWA Service Worker using vite-plugin-pwa helper
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

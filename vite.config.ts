@@ -16,18 +16,17 @@ export default defineConfig(() => {
           enabled: true,
           type: 'classic'
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['sda-logo.png', 'icon-512.png'],
         manifest: {
           name: "SDA Church Treasurer's Portal",
           short_name: "SDA Treasurer",
           description: "Secure offline-first stewardship and financial recording portal.",
-          theme_color: "#1e40af",
+          theme_color: "#0f172a",
+          background_color: "#0f172a",
+          display: "standalone",
+          start_url: "/",
+          orientation: "portrait",
           icons: [
-            {
-              src: 'icon-512.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
             {
               src: 'icon-512.png',
               sizes: '512x512',
