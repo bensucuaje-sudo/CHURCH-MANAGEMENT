@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Contribution, ChurchPreferences } from './types';
 import { INITIAL_MEMBERS, INITIAL_CONTRIBUTIONS, INITIAL_PREFERENCES } from './mockData';
-import { LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
 
 // Subcomponents
 import sdaLogo from './utils/sda logo.png';
@@ -88,6 +88,47 @@ export default function App() {
     }
     return INITIAL_PREFERENCES;
   });
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Update UI notify the user they can install the PWA
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    
+    // We've used the prompt, and can't use it again, so clear it
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   // 2. Navigation & Interface States
   const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config'>('dashboard');
@@ -250,6 +291,22 @@ export default function App() {
             <Settings size={14} className={activeTab === 'config' ? 'text-blue-500' : 'text-slate-400'} />
             Offering Plan Setup
           </button>
+
+          {isInstallable && (
+            <div className="mx-4 mt-6 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl space-y-2">
+              <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Offline Ready</h4>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                Install as a dedicated desktop app for faster access and offline use.
+              </p>
+              <button
+                onClick={handleInstallClick}
+                className="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded shadow-sm transition cursor-pointer"
+              >
+                <Download size={12} />
+                Install Web App
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* PROFILE SLOT AT BOTTOM OF SIDEBAR */}
