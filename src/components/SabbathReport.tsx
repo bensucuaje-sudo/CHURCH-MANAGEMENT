@@ -223,12 +223,12 @@ export default function SabbathReport({ contributions, members, preferences }: S
         @media print {
           @page {
             size: A4 portrait;
-            margin: 15mm 12mm 15mm 12mm;
+            margin: 8mm 10mm 8mm 10mm !important;
           }
           body {
             background: white !important;
             color: black !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
           }
           
           /* Hide EVERYTHING in the page during print by default */
@@ -297,18 +297,122 @@ export default function SabbathReport({ contributions, members, preferences }: S
             width: 100% !important;
           }
           
+          /* COMPRESSION OVERRIDES FOR SINGLE PAGE A4 PRINT */
+          #sabbath-overall-canvas {
+            padding: 8px 12px !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          
           .printable-card {
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
             box-shadow: none !important;
             background: white !important;
-            border-radius: 4px !important;
-            padding: 12px !important;
+            border-radius: 6px !important;
+            padding: 6px 10px !important;
+            margin: 0 !important;
           }
           
           .printable-header {
             border-bottom: 2px solid #0f172a !important;
-            padding-bottom: 12px !important;
-            margin-bottom: 20px !important;
+            padding-bottom: 6px !important;
+            margin-bottom: 10px !important;
+          }
+          
+          /* Override spacing of elements */
+          .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 8px !important;
+          }
+          .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 6px !important;
+          }
+          .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 4px !important;
+          }
+          .space-y-2.5 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 3px !important;
+          }
+          .divide-y > :not([hidden]) ~ :not([hidden]) {
+            border-top-width: 1px !important;
+          }
+          
+          /* Specific layouts scaling and padding */
+          .grid {
+            gap: 8px !important;
+          }
+          .p-4 {
+            padding: 6px 10px !important;
+          }
+          .p-6, .p-8 {
+            padding: 8px 10px !important;
+          }
+          .pt-8 {
+            padding-top: 10px !important;
+          }
+          .pb-6 {
+            padding-bottom: 6px !important;
+          }
+          .mt-12 {
+            margin-top: 10px !important;
+          }
+          .mt-1 {
+            margin-top: 2px !important;
+          }
+          .mb-3 {
+            margin-bottom: 4px !important;
+          }
+          
+          /* General typography compression */
+          h1, .text-base {
+            font-size: 11px !important;
+            line-height: normal !important;
+          }
+          h2, .text-sm {
+            font-size: 9.5px !important;
+            line-height: normal !important;
+          }
+          h3, h4, .text-xs, .text-\[11px\], .text-\[10px\], .text-\[9px\] {
+            font-size: 8px !important;
+            line-height: normal !important;
+          }
+          span, p, td, th {
+            font-size: 8px !important;
+            line-height: normal !important;
+          }
+          .text-lg {
+            font-size: 11px !important;
+            line-height: normal !important;
+          }
+          /* Stat card value display metric sizes */
+          .text-base.font-black,
+          .text-base.font-mono,
+          td .text-emerald-600,
+          span .text-emerald-600 {
+            font-size: 10px !important;
+            font-weight: 900 !important;
+          }
+          
+          /* Signatures block compression */
+          #signatures-block {
+            margin-top: 12px !important;
+            padding-top: 10px !important;
+            gap: 12px !important;
+            border-top-width: 1px !important;
+          }
+          #signatures-block > .space-y-6 {
+            margin-top: 0 !important;
+          }
+          #signatures-block .h-10 {
+            height: 18px !important;
+          }
+          #signatures-block .text-xs {
+            font-size: 8px !important;
+            font-weight: 800 !important;
+          }
+          #signatures-block .text-\[10px\] {
+            font-size: 7.5px !important;
+            margin-top: 2px !important;
           }
           
           .printable-table th {
@@ -338,7 +442,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
             <Calendar size={18} />
           </div>
           <div>
-            <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Sabbath Weekend Report</h3>
+            <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Sabbath Weekly Report</h3>
             <p className="text-[11px] text-slate-500 font-medium">Consolidated weekly audit worksheet & systematic allocations ledger.</p>
           </div>
         </div>

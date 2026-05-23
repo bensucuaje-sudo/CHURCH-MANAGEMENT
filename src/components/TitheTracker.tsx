@@ -335,7 +335,7 @@ export default function TitheTracker({
                   </div>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-150/80 shadow-3xs text-center min-w-[90px]">
-                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total Amount</span>
+                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">GROSS COLLECTIONS</span>
                   <span className="text-sm font-mono font-black text-slate-850">{preferences.currency} {filteredTotals.total.toFixed(2)}</span>
                 </div>
               </div>
