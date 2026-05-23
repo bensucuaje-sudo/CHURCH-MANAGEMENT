@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, Download, Upload, Trash2, LogIn, LogOut, CheckCircle2, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { Cloud, Download, Upload, Trash2, LogIn, LogOut, CheckCircle2, AlertCircle, RefreshCw, Database, ExternalLink, ShieldAlert } from 'lucide-react';
 import { googleSignIn, logout, initAuth } from '../lib/firebase';
-import { uploadBackup, listBackupFiles, downloadBackup, deleteBackup, DriveFile } from '../lib/drive';
+import { uploadBackup, listBackupFiles, downloadBackup, deleteBackup, extractFolderId, DriveFile } from '../lib/drive';
 import { Member, Contribution, ChurchPreferences } from '../types';
 import { User } from 'firebase/auth';
 
@@ -19,13 +19,21 @@ export default function AdminPortal({ members, contributions, preferences, onImp
   const [backups, setBackups] = useState<DriveFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [folderInput, setFolderInput] = useState(() => {
+    return localStorage.getItem('church_backup_folder_id') || '1r8ZxWW_JGUw0L-mYyKU4O53XX9FoYu0x';
+  });
+  const [isInIframe, setIsInIframe] = useState(false);
+
+  useEffect(() => {
+    setIsInIframe(window.self !== window.top);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = initAuth(
       (u, t) => {
         setUser(u);
         setToken(t);
-        fetchBackups(t);
+        fetchBackupsWithToken(t);
       },
       () => {
         setUser(null);
@@ -33,12 +41,13 @@ export default function AdminPortal({ members, contributions, preferences, onImp
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [folderInput]);
 
-  const fetchBackups = async (accessToken: string) => {
+  const fetchBackupsWithToken = async (accessToken: string) => {
     try {
       setIsLoading(true);
-      const files = await listBackupFiles(accessToken);
+      const folderId = extractFolderId(folderInput);
+      const files = await listBackupFiles(accessToken, folderId);
       setBackups(files);
     } catch (err) {
       console.error(err);
@@ -53,10 +62,10 @@ export default function AdminPortal({ members, contributions, preferences, onImp
       if (result) {
         setUser(result.user);
         setToken(result.accessToken);
-        fetchBackups(result.accessToken);
+        fetchBackupsWithToken(result.accessToken);
       }
     } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Authentication failed.' });
+      setStatusMsg({ type: 'error', text: 'Authentication failed. Make sure popups are allowed or use a new tab.' });
     }
   };
 
@@ -80,9 +89,10 @@ export default function AdminPortal({ members, contributions, preferences, onImp
         contributions,
         preferences
       };
-      await uploadBackup(token, fileName, data);
+      const folderId = extractFolderId(folderInput);
+      await uploadBackup(token, fileName, data, folderId);
       setStatusMsg({ type: 'success', text: 'Data exported to Google Drive successfully.' });
-      fetchBackups(token);
+      fetchBackupsWithToken(token);
     } catch (err) {
       setStatusMsg({ type: 'error', text: 'Failed to export data.' });
     } finally {
@@ -118,7 +128,7 @@ export default function AdminPortal({ members, contributions, preferences, onImp
       setIsLoading(true);
       await deleteBackup(token, fileId);
       setStatusMsg({ type: 'success', text: 'Backup deleted.' });
-      fetchBackups(token);
+      fetchBackupsWithToken(token);
     } catch (err) {
       setStatusMsg({ type: 'error', text: 'Failed to delete backup.' });
     } finally {
@@ -172,13 +182,25 @@ export default function AdminPortal({ members, contributions, preferences, onImp
             </button>
           </div>
         ) : (
-          <button
-            onClick={handleLogin}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 rounded-xl font-bold text-sm transition shadow-sm cursor-pointer"
-          >
-            <LogIn size={16} />
-            Connect Google Drive
-          </button>
+          <div className="flex items-center gap-2">
+            {isInIframe && (
+              <button
+                onClick={() => window.open(window.location.href, '_blank')}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-750 hover:text-amber-800 rounded-xl font-bold text-xs transition shadow-3xs cursor-pointer"
+                title="Google login works perfectly inside a standalone browser tab!"
+              >
+                <ExternalLink size={14} />
+                Open in New Tab
+              </button>
+            )}
+            <button
+              onClick={handleLogin}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-blue-400 text-slate-705 hover:text-blue-600 rounded-xl font-bold text-xs transition shadow-3xs cursor-pointer"
+            >
+              <LogIn size={14} />
+              Connect Google Drive
+            </button>
+          </div>
         )}
       </div>
 
@@ -189,38 +211,103 @@ export default function AdminPortal({ members, contributions, preferences, onImp
           {statusMsg.type === 'success' ? <CheckCircle2 size={18} className="mt-0.5" /> : <AlertCircle size={18} className="mt-0.5" />}
           <div className="flex-1">
             <p className="text-xs font-bold uppercase tracking-wider">{statusMsg.type === 'success' ? 'Success' : 'Error'}</p>
-            <p className="text-sm opacity-90">{statusMsg.text}</p>
+            <p className="text-xs opacity-90">{statusMsg.text}</p>
           </div>
-          <button onClick={() => setStatusMsg(null)} className="text-slate-400 hover:text-slate-600">
+          <button onClick={() => setStatusMsg(null)} className="text-slate-400 hover:text-slate-650">
             <Database size={14} />
           </button>
         </div>
       )}
 
       {!user ? (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-12 text-center space-y-6">
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-blue-100 flex items-center justify-center mx-auto text-blue-600">
-            <Cloud size={32} />
+        <div className="space-y-6">
+          {isInIframe && (
+            <div className="bg-amber-55/70 border border-amber-200/80 rounded-2xl p-6 text-slate-700 space-y-3 max-w-2xl mx-auto shadow-sm">
+              <div className="flex gap-2 font-bold text-amber-850 items-center">
+                <ShieldAlert size={18} className="text-amber-600 shrink-0" />
+                <span className="text-xs font-black uppercase tracking-wider">Third-Party Cookie / Popup Restriction</span>
+              </div>
+              <p className="text-xs text-amber-900 leading-relaxed">
+                Because this application runs in an **iframe** inside the AI Studio preview, your browser's security model may block the Google OAuth popup window or cause it to close immediately.
+              </p>
+              <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-3">
+                <button
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-705 text-white font-bold rounded-xl transition shadow-md shadow-amber-600/10 text-xs cursor-pointer"
+                >
+                  <ExternalLink size={14} />
+                  Open Application in New Tab to Login
+                </button>
+                <span className="text-[11px] text-amber-700 font-bold">★ Restoring & backing up is 100% stable in a new tab!</span>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-12 text-center space-y-6">
+            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-blue-100 flex items-center justify-center mx-auto text-blue-600">
+              <Cloud size={32} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-slate-900">Cloud Sync & Security</h3>
+              <p className="text-slate-500 max-w-lg mx-auto text-sm leading-relaxed">
+                Connect your Google account to unlock cloud backups. This ensures your church data is stored securely 
+                off-site and can be restored in case of local device failure or accidental deletion.
+              </p>
+            </div>
+            <button
+              onClick={handleLogin}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <LogIn size={18} />
+              Get Started with Google Drive
+            </button>
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-slate-900">Cloud Sync & Security</h3>
-            <p className="text-slate-500 max-w-lg mx-auto text-sm leading-relaxed">
-              Connect your Google account to unlock cloud backups. This ensures your church data is stored securely 
-              off-site and can be restored in case of local device failure or accidental deletion.
-            </p>
-          </div>
-          <button
-            onClick={handleLogin}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <LogIn size={18} />
-            Get Started with Google Drive
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Quick Actions */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Folder configuration panel */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <div>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Database size={12} />
+                  Target Folder Configuration
+                </h3>
+                <p className="text-[10px] text-slate-500 mt-1">Specify destination folder for backup archives.</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-500">Google Drive Folder Link or ID</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                    placeholder="Enter folder link or ID..."
+                    value={folderInput}
+                    onChange={(e) => {
+                      setFolderInput(e.target.value);
+                      localStorage.setItem('church_backup_folder_id', e.target.value);
+                    }}
+                  />
+                  {folderInput && (
+                    <a
+                      href={folderInput.trim().includes('http') ? folderInput.trim() : `https://drive.google.com/drive/folders/${extractFolderId(folderInput)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-605 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                      title="Open shared folder in Google Drive"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+                <p className="text-[9px] text-slate-400 leading-normal">
+                  Linked folder ID: <code className="font-mono bg-slate-50 px-1 py-0.5 rounded text-[8px] font-bold text-slate-500">{extractFolderId(folderInput) || 'None'}</code>
+                </p>
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <RefreshCw size={12} />
@@ -233,7 +320,7 @@ export default function AdminPortal({ members, contributions, preferences, onImp
                 className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group cursor-pointer"
               >
                 <div className="text-left">
-                  <p className="text-sm font-black text-slate-850 group-hover:text-blue-600">Export All Entries</p>
+                  <p className="text-sm font-black text-slate-800 group-hover:text-blue-600">Export All Entries</p>
                   <p className="text-[10px] text-slate-500">Securely push local data to Drive</p>
                 </div>
                 <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 shadow-3xs flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:border-blue-200 transition-all">
@@ -247,7 +334,7 @@ export default function AdminPortal({ members, contributions, preferences, onImp
                 className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-xl transition-all group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="text-left">
-                  <p className="text-sm font-black text-slate-850 group-hover:text-emerald-600">Restore Latest</p>
+                  <p className="text-sm font-black text-slate-800 group-hover:text-emerald-600">Restore Latest</p>
                   <p className="text-[10px] text-slate-500">Pick up where you left off</p>
                 </div>
                 <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 shadow-3xs flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-all">
@@ -277,10 +364,10 @@ export default function AdminPortal({ members, contributions, preferences, onImp
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-black text-slate-900 tracking-tight">Cloud Backup History</h3>
-                <p className="text-[10px] text-slate-500 font-medium">Manage and restore previous database snapshots</p>
+                <p className="text-[10px] text-slate-500 font-medium font-bold">Manage and restore previous database snapshots</p>
               </div>
               <button 
-                onClick={() => fetchBackups(token!)}
+                onClick={() => fetchBackupsWithToken(token!)}
                 className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition"
               >
                 <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
@@ -291,13 +378,13 @@ export default function AdminPortal({ members, contributions, preferences, onImp
               {isLoading && backups.length === 0 ? (
                 <div className="p-20 text-center space-y-3">
                   <RefreshCw className="mx-auto text-blue-600 animate-spin" size={24} />
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Scanning Drive Files...</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Scanning Folder backups...</p>
                 </div>
               ) : backups.length === 0 ? (
                 <div className="p-20 text-center space-y-3">
                   <Cloud className="mx-auto text-slate-200" size={48} />
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Backups Found</p>
-                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto">Click "Export All Entries" to create your first cloud backup.</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Backups Found in Folder</p>
+                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto">Click "Export All Entries" or make sure the folder contains active backups.</p>
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
