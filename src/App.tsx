@@ -25,7 +25,7 @@ export default function App() {
     
     // Deduplicate and guarantee completely unique IDs
     const seen = new Set<string>();
-    let maxIdNum = 1008;
+    let maxIdNum = 1000;
     raw.forEach(m => {
       const num = parseInt(m.id?.replace('M-', '') || '');
       if (!isNaN(num) && num > maxIdNum) {
@@ -54,7 +54,7 @@ export default function App() {
 
     // Deduplicate and guarantee completely unique IDs
     const seen = new Set<string>();
-    let maxIdNum = 5010;
+    let maxIdNum = 5000;
     raw.forEach(c => {
       const num = parseInt(c.id?.replace('C-', '') || '');
       if (!isNaN(num) && num > maxIdNum) {
@@ -125,7 +125,7 @@ export default function App() {
     const maxId = members.reduce((max, m) => {
       const num = parseInt(m.id.replace('M-', ''));
       return isNaN(num) ? max : Math.max(max, num);
-    }, 1008);
+    }, 1000);
     const newMember: Member = {
       ...newMemData,
       id: `M-${maxId + 1}`
@@ -151,7 +151,7 @@ export default function App() {
     const maxId = contributions.reduce((max, c) => {
       const num = parseInt(c.id.replace('C-', ''));
       return isNaN(num) ? max : Math.max(max, num);
-    }, 5010);
+    }, 5000);
     const newContrib: Contribution = {
       ...newContribData,
       id: `C-${maxId + 1}`

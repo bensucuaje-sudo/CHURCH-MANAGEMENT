@@ -1,6 +1,6 @@
 {
-  "name": "Church Management System",
-  "description": "A comprehensive applet for managing members, recording tithe and offering collections, plotting giving trends, printing custom receipts, and exporting reports.",
+  "name": "SDA Church Treasurer's Portal",
+  "description": "Secure community stewardship and financial recording portal for church treasurers. Features member directories, tithe recording, and offline-first persistence (PWA).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
