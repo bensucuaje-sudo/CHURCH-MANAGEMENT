@@ -663,7 +663,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
                 <div className="border-b border-slate-400 mx-auto max-w-[200px] h-10"></div>
                 <div>
                   <p className="text-xs font-black text-slate-850 uppercase leading-none">PREPARED BY:</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Church Treasurer / Steward Accountant</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Church Treasurer</p>
                 </div>
               </div>
 
@@ -681,7 +681,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
                 <div className="border-b border-slate-400 mx-auto max-w-[200px] h-10"></div>
                 <div>
                   <p className="text-xs font-black text-slate-850 uppercase leading-none">APPROVED BY:</p>
-                  <p className="text-[10px] text-slate-500 mt-1">S Santo Tomas District Pastor</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Church Pastor - Santo Tomas Central</p>
                 </div>
               </div>
             </div>
