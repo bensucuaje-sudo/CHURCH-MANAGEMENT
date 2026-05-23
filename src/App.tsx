@@ -6,8 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Contribution, ChurchPreferences } from './types';
 import { INITIAL_MEMBERS, INITIAL_CONTRIBUTIONS, INITIAL_PREFERENCES } from './mockData';
-import { LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
-
 // Subcomponents
 const sdaLogo = '/sda-logo.png';
 import { ChurchLogo } from './components/ChurchLogo';
@@ -16,6 +14,8 @@ import MemberManager from './components/MemberManager';
 import TitheTracker from './components/TitheTracker';
 import ReceiptPrinter from './components/ReceiptPrinter';
 import ChurchConfig from './components/ChurchConfig';
+import AdminPortal from './components/AdminPortal';
+import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
 
 export default function App() {
   // 1. Core Persistent States
@@ -131,7 +131,7 @@ export default function App() {
   };
 
   // 2. Navigation & Interface States
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config' | 'admin'>('dashboard');
   const [currentReceiptContribution, setCurrentReceiptContribution] = useState<Contribution | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     const cached = localStorage.getItem('church_isAdmin');
@@ -214,6 +214,12 @@ export default function App() {
     setPreferences(updatedPref);
   };
 
+  const handleImportBackup = (data: { members: Member[]; contributions: Contribution[]; preferences: ChurchPreferences }) => {
+    setMembers(data.members);
+    setContributions(data.contributions);
+    setPreferences(data.preferences);
+  };
+
   const handleClearAllData = () => {
     if (confirm("Are you sure you want to delete ALL data (members, contributions)? This action cannot be undone.")) {
       localStorage.removeItem('church_members');
@@ -290,6 +296,18 @@ export default function App() {
           >
             <Settings size={14} className={activeTab === 'config' ? 'text-blue-500' : 'text-slate-400'} />
             Offering Plan Setup
+          </button>
+
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`w-full flex items-center gap-3 px-6 py-2.5 text-xs font-semibold cursor-pointer transition-all ${
+              activeTab === 'admin'
+                ? 'bg-slate-800 text-white border-l-4 border-blue-500'
+                : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+            }`}
+          >
+            <Database size={14} className={activeTab === 'admin' ? 'text-blue-500' : 'text-slate-400'} />
+            Cloud Data Backups
           </button>
 
           {isInstallable && (
@@ -470,6 +488,16 @@ export default function App() {
               preferences={preferences} 
               onUpdatePreferences={handleUpdatePreferences} 
               onClearAllData={handleClearAllData}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminPortal 
+              members={members}
+              contributions={contributions}
+              preferences={preferences}
+              onImportData={handleImportBackup}
               isAdmin={isAdmin}
             />
           )}
