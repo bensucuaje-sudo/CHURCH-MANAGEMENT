@@ -211,8 +211,25 @@ export default function SabbathReport({ contributions, members, preferences }: S
             font-size: 11px !important;
           }
           /* Hide all standard elements in the outer DOM shell */
-          #sidebar, #app-header, #app-footer, #read-only-banner, #analytics-section > div:first-child, #analytics-section > div:nth-child(2), #sidebar-install-widget {
+          #sidebar, #app-header, #app-footer, #read-only-banner, #analytics-section > div:first-child, #analytics-section > div:nth-child(2), #sidebar-install-widget, #tithe-tracker-section > *:not(#sabbath-report-modal) {
             display: none !important;
+          }
+          #sabbath-report-modal {
+            position: absolute !important;
+            inset: 0 !important;
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+          #sabbath-report-modal-content {
+            border: none !important;
+            box-shadow: none !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
           }
           /* Eliminate scroll layouts and paddings of workspace wrapper */
           #workspace-canvas {

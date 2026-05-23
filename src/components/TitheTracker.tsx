@@ -5,8 +5,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { Member, Contribution, ChurchPreferences } from '../types';
-import { CreditCard, Plus, IndianRupee, Printer, ArrowRight, Search, FileDown, Calendar, Receipt, Sparkles, Trash2, ShieldAlert } from 'lucide-react';
+import { CreditCard, Plus, IndianRupee, Printer, ArrowRight, Search, FileDown, Calendar, Receipt, Sparkles, Trash2, ShieldAlert, FileText, X } from 'lucide-react';
 import { exportContributionsToCSV } from '../utils/exporter';
+import SabbathReport from './SabbathReport';
 
 interface TitheTrackerProps {
   contributions: Contribution[];
@@ -39,6 +40,7 @@ export default function TitheTracker({
   // Date Filtering States
   const [dateFilterMode, setDateFilterMode] = useState<'all' | 'today' | 'custom'>('today');
   const [customDateFilter, setCustomDateFilter] = useState(() => new Date().toISOString().split('T')[0]);
+  const [showSabbathReport, setShowSabbathReport] = useState(false);
 
   // Ledger Entry Fields
   const [memberId, setMemberId] = useState('');
@@ -279,6 +281,14 @@ export default function TitheTracker({
               className="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 hover:border-slate-300 px-4 py-2 rounded-lg shadow-3xs transition duration-150 flex items-center gap-1.5 font-sans"
             >
               📊 Export Ledger to Excel
+            </button>
+            <button
+              onClick={() => setShowSabbathReport(true)}
+              className="text-xs font-semibold text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-4 py-2 rounded-lg shadow-3xs transition duration-150 flex items-center gap-1.5 font-sans cursor-pointer"
+              id="btn-view-sabbath-report-ledger"
+            >
+              <FileText size={14} className="text-sky-600 animate-pulse" />
+              <span>📋 Weekly Sabbath Report</span>
             </button>
             {isAdmin && (
               <button
@@ -871,6 +881,52 @@ export default function TitheTracker({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showSabbathReport && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center p-4 md:p-6 print:p-0 print:bg-white print:absolute print:inset-0" id="sabbath-report-modal" onClick={() => setShowSabbathReport(false)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-100 flex flex-col my-auto max-h-[90vh] print:max-h-full print:shadow-none print:border-none print:w-full print:my-0" id="sabbath-report-modal-content" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header inside non-printable area */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0 print:hidden rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-sky-50 text-sky-600 p-2 rounded-lg">
+                  <FileText size={18} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-xs font-black tracking-tight uppercase text-slate-800">Printable Sabbath Report Workspace</h3>
+                  <p className="text-[10px] text-slate-500 font-medium font-sans">Preview, customize allocations, and print Seventh-Day Adventist weekly stewardship logs.</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowSabbathReport(false)}
+                className="p-1.5 hover:bg-slate-200 rounded-lg transition text-slate-500 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable Document area */}
+            <div className="p-6 overflow-y-auto flex-1 print:overflow-visible print:p-0 bg-slate-50/30 print:bg-white text-left">
+              <SabbathReport 
+                contributions={contributions}
+                members={members}
+                preferences={preferences}
+              />
+            </div>
+
+            {/* Modal Footer inside non-printable area */}
+            <div className="px-6 py-3 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 shrink-0 print:hidden rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => setShowSabbathReport(false)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer font-sans"
+              >
+                Close View
+              </button>
+            </div>
           </div>
         </div>
       )}

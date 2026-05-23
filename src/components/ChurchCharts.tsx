@@ -5,8 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Member, Contribution, ChurchPreferences } from '../types';
-import { TrendingUp, BarChart3, PieChart as PieIcon, User, Calendar, CreditCard, FileText } from 'lucide-react';
-import SabbathReport from './SabbathReport';
+import { TrendingUp, BarChart3, PieChart as PieIcon, User, Calendar, CreditCard } from 'lucide-react';
 
 interface ChurchChartsProps {
   contributions: Contribution[];
@@ -17,7 +16,7 @@ interface ChurchChartsProps {
 export default function ChurchCharts({ contributions, members, preferences }: ChurchChartsProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<'all' | '6months' | '3months'>('all');
-  const [chartTab, setChartTab] = useState<'trends' | 'categories' | 'member' | 'sabbath'>('trends');
+  const [chartTab, setChartTab] = useState<'trends' | 'categories' | 'member'>('trends');
   const [chartFrequency, setChartFrequency] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
 
   // Filter contributions based on selected member and timeframe
@@ -305,29 +304,11 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
           <User size={14} className="text-indigo-600" />
           Member Giving Timeline
         </button>
-        <button
-          onClick={() => setChartTab('sabbath')}
-          className={`flex items-center gap-2 px-6 py-3 text-xs uppercase tracking-wider font-extrabold border-b-2 transition cursor-pointer ${
-            chartTab === 'sabbath'
-              ? 'border-sky-600 text-sky-600 bg-slate-50/30'
-              : 'border-transparent text-slate-550 hover:text-slate-900 hover:bg-slate-50/50'
-          }`}
-          id="tab-sabbath-report"
-        >
-          <FileText size={14} className="text-sky-600" />
-          Printable Sabbath Report
-        </button>
       </div>
 
       {/* Main Charts Area */}
       <div className="p-6">
-        {chartTab === 'sabbath' ? (
-          <SabbathReport 
-            contributions={contributions} 
-            members={members} 
-            preferences={preferences} 
-          />
-        ) : filteredContributions.length === 0 ? (
+        {filteredContributions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3">
               <Calendar size={24} />
