@@ -116,6 +116,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
     let youthSum = 0;
     let othersSum = 0;
     let totalSum = 0;
+    let copChurchSum = 0;
     
     const donors = new Set<string>();
     const paymentMethods: { [key: string]: { amount: number; count: number } } = {
@@ -136,6 +137,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
       youthSum += c.youth || 0;
       othersSum += c.others || 0;
       totalSum += c.total || 0;
+      copChurchSum += c.copChurch || 0;
 
       if (c.memberId) donors.add(c.memberId);
 
@@ -164,6 +166,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
       youthSum,
       othersSum,
       totalSum,
+      copChurchSum,
       uniqueDonorsCount: donors.size,
       receiptCount: sabbathContributions.length,
       paymentMethods,
@@ -442,8 +445,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
               <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
-                    <ShieldCheck size={13} className="text-blue-600" />
-                    Tithe Allocation Shares
+                    MISSION FUNDS
                   </h4>
                   <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
                     Total: {preferences.currency} {stats.titheSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -454,9 +456,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
                   {titheAllocations.map(alloc => (
                     <div key={alloc.id} className="space-y-1">
                       <div className="flex justify-between text-[11px]">
-                        <span className="font-bold text-slate-800 font-sans leading-tight">
-                          {alloc.name}
-                        </span>
+                        <span></span>
                         <span className="font-mono text-slate-705 font-bold leading-none">
                           {preferences.currency} {alloc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({alloc.percentage}%)
                         </span>
@@ -466,49 +466,58 @@ export default function SabbathReport({ contributions, members, preferences }: S
                       </div>
                     </div>
                   ))}
-                  <p className="text-[9px] text-slate-450 leading-normal">
-                    * Systematic Tithes are remitted directly in whole to the Local Mission/Conference headquarters in accordance with Seventh-day Adventist General Conference guidelines.
-                  </p>
                 </div>
               </div>
 
               {/* Combined offering plan allocations */}
-              <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
-                    <Share2 size={13} className="text-emerald-600" />
-                    Combined Offering Plan Splits
-                  </h4>
-                  <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                    Total: {preferences.currency} {stats.combinedOfferingSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+              {(() => {
+                const totalChurchSum = stats.copChurchSum + stats.buildingFundSum;
+                const copChurchPercent = totalChurchSum > 0 ? Math.round((stats.copChurchSum / totalChurchSum) * 100) : 0;
+                const buildingPercent = totalChurchSum > 0 ? Math.round((stats.buildingFundSum / totalChurchSum) * 100) : 0;
 
-                <div className="space-y-2.5">
-                  {offeringAllocations.length === 0 ? (
-                    <p className="text-[10px] text-slate-400 italic">No allocation splits defined in configurations settings.</p>
-                  ) : (
-                    offeringAllocations.map(alloc => (
-                      <div key={alloc.id} className="space-y-1">
+                return (
+                  <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
+                        CHURCH FUNDS
+                      </h4>
+                      <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        Total: {preferences.currency} {totalChurchSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="space-y-1">
                         <div className="flex justify-between text-[11px]">
                           <span className="font-bold text-slate-800 font-sans leading-tight">
-                            {alloc.name}
+                            COP
                           </span>
                           <span className="font-mono text-slate-705 font-bold leading-none">
-                            {preferences.currency} {alloc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({alloc.percentage}%)
+                            {preferences.currency} {stats.copChurchSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({copChurchPercent}%)
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-emerald-600 h-full" style={{ width: `${alloc.percentage}%` }}></div>
+                          <div className="bg-emerald-600 h-full" style={{ width: `${copChurchPercent}%` }}></div>
                         </div>
                       </div>
-                    ))
-                  )}
-                  <p className="text-[9px] text-slate-450 leading-normal">
-                    * Combined Offering splits are allocated to various missionary sub-tiers and congregational ministries according to the predefined ratio guidelines.
-                  </p>
-                </div>
-              </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px]">
+                          <span className="font-bold text-slate-800 font-sans leading-tight">
+                            Church Building
+                          </span>
+                          <span className="font-mono text-slate-705 font-bold leading-none">
+                            {preferences.currency} {stats.buildingFundSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({buildingPercent}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-emerald-600 h-full" style={{ width: `${buildingPercent}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
 
