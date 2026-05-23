@@ -139,14 +139,12 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
     });
     
     const total = tithe + combinedOffering + buildingFund + missions + youth + others;
+    const othersCombined = buildingFund + missions + youth + others;
     
     return [
-      { name: 'Tithes (10% Devotion)', value: tithe, pct: total ? (tithe / total) * 100 : 0, color: '#2563eb' }, // blue-600
+      { name: 'Tithes', value: tithe, pct: total ? (tithe / total) * 100 : 0, color: '#2563eb' }, // blue-600
       { name: 'Combined Offering', value: combinedOffering, pct: total ? (combinedOffering / total) * 100 : 0, color: '#059669' }, // emerald-600
-      { name: 'Building & Dev Fund', value: buildingFund, pct: total ? (buildingFund / total) * 100 : 0, color: '#d97706' }, // amber-600
-      { name: 'Global Missions', value: missions, pct: total ? (missions / total) * 100 : 0, color: '#4f46e5' }, // indigo-650
-      { name: 'Youth ministries', value: youth, pct: total ? (youth / total) * 100 : 0, color: '#db2777' }, // pink-600
-      { name: 'Others / Local Funds', value: others, pct: total ? (others / total) * 100 : 0, color: '#7c3aed' }, // violet-600
+      { name: 'Others/Local Funds', value: othersCombined, pct: total ? (othersCombined / total) * 100 : 0, color: '#7c3aed' }, // violet-600
     ].filter(item => item.value > 0);
   }, [filteredContributions]);
 
@@ -290,7 +288,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
           id="tab-categories"
         >
           <PieIcon size={14} className="text-emerald-600" />
-          Fund Allocation Breakdown
+          Funds Allocation Breakdown
         </button>
         <button
           onClick={() => setChartTab('member')}
@@ -437,7 +435,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-3 h-3 bg-violet-600 rounded-2xs"></span>
-                      <span>Other Restricted Funds</span>
+                      <span>Others/Local Funds</span>
                     </div>
                   </div>
                 </div>
@@ -481,7 +479,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
                 {/* Visual Category shares */}
                 <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between">
                   <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Total Fund Distributions</h4>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">TOTAL FUNDS DISTRIBUTION</h4>
                     
                     {/* Inline progress breakdown bars (extremely modern, visually precise, no fragile canvas elements) */}
                     <div className="space-y-4">
@@ -550,7 +548,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
                 <div className="bg-blue-50/20 border border-blue-100/50 rounded-xl p-5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-blue-800">TOTAL TITHE SYSTEMATIC ALLOTMENTS</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-blue-800">TOTAL TITHES SYSTEMATIC GIVING</h4>
                       <span className="bg-blue-100 text-blue-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Systematic Ratio</span>
                     </div>
                     
