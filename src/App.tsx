@@ -6,8 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Contribution, ChurchPreferences } from './types';
 import { INITIAL_MEMBERS, INITIAL_CONTRIBUTIONS, INITIAL_PREFERENCES } from './mockData';
-// Subcomponents
-const sdaLogo = '/sda-logo.png';
 import { ChurchLogo } from './components/ChurchLogo';
 import ChurchCharts from './components/ChurchCharts';
 import MemberManager from './components/MemberManager';
@@ -17,11 +15,23 @@ import ChurchConfig from './components/ChurchConfig';
 import AdminPortal from './components/AdminPortal';
 import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
 
+const sdaLogo = '/sda-logo.png';
+
 export default function App() {
+  // Helper for safe JSON parsing
+  const safeJsonParse = (key: string, defaultValue: any) => {
+    try {
+      const cached = localStorage.getItem(key);
+      return cached ? JSON.parse(cached) : defaultValue;
+    } catch (e) {
+      console.error(`Error parsing localStorage for key "${key}":`, e);
+      return defaultValue;
+    }
+  };
+
   // 1. Core Persistent States
   const [members, setMembers] = useState<Member[]>(() => {
-    const cached = localStorage.getItem('church_members');
-    const raw: Member[] = cached ? JSON.parse(cached) : INITIAL_MEMBERS;
+    const raw: Member[] = safeJsonParse('church_members', INITIAL_MEMBERS);
     
     // Deduplicate and guarantee completely unique IDs
     const seen = new Set<string>();
@@ -49,8 +59,7 @@ export default function App() {
   });
 
   const [contributions, setContributions] = useState<Contribution[]>(() => {
-    const cached = localStorage.getItem('church_contributions');
-    const raw: Contribution[] = cached ? JSON.parse(cached) : INITIAL_CONTRIBUTIONS;
+    const raw: Contribution[] = safeJsonParse('church_contributions', INITIAL_CONTRIBUTIONS);
 
     // Deduplicate and guarantee completely unique IDs
     const seen = new Set<string>();
@@ -78,15 +87,11 @@ export default function App() {
   });
 
   const [preferences, setPreferences] = useState<ChurchPreferences>(() => {
-    const cached = localStorage.getItem('church_preferences');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (!parsed.titheAllocations) {
-        parsed.titheAllocations = INITIAL_PREFERENCES.titheAllocations;
-      }
-      return parsed;
+    const parsed = safeJsonParse('church_preferences', INITIAL_PREFERENCES);
+    if (parsed && !parsed.titheAllocations) {
+      parsed.titheAllocations = INITIAL_PREFERENCES.titheAllocations;
     }
-    return INITIAL_PREFERENCES;
+    return parsed;
   });
 
   // PWA Install State
@@ -134,8 +139,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config' | 'admin'>('dashboard');
   const [currentReceiptContribution, setCurrentReceiptContribution] = useState<Contribution | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    const cached = localStorage.getItem('church_isAdmin');
-    return cached ? JSON.parse(cached) : false; // Safe default to false (View-Only Mode)
+    return safeJsonParse('church_isAdmin', false); // Safe default to false (View-Only Mode)
   });
 
   // Admin Verification credentials modal state
