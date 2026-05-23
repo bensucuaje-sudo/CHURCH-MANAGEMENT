@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // Use static path for logo in public folder
 const sdaLogo = '/sda-logo.png';
+
+// Cache the Base64 representation across render cycles so we only fetch/convert once
+let cachedBase64Logo: string | null = null;
 
 interface ChurchLogoProps {
   className?: string;
@@ -14,6 +17,37 @@ export const ChurchLogo: React.FC<ChurchLogoProps> = ({
   size = 'md'
 }) => {
   const [hasError, setHasError] = useState(false);
+  const [logoSrc, setLogoSrc] = useState<string>(() => {
+    return cachedBase64Logo || sdaLogo;
+  });
+
+  useEffect(() => {
+    if (cachedBase64Logo) {
+      setLogoSrc(cachedBase64Logo);
+      return;
+    }
+
+    const loadAndConvertLogo = async () => {
+      try {
+        const absoluteUrl = window.location.origin + sdaLogo;
+        const response = await fetch(absoluteUrl);
+        const blob = await response.blob();
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          cachedBase64Logo = base64data;
+          setLogoSrc(base64data);
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.warn('Failed to convert logo to base64, falling back to absolute URL.', err);
+        setLogoSrc(window.location.origin + sdaLogo);
+      }
+    };
+
+    loadAndConvertLogo();
+  }, []);
 
   const handleError = () => {
     setHasError(true);
@@ -51,7 +85,7 @@ export const ChurchLogo: React.FC<ChurchLogoProps> = ({
 
   return (
     <img
-      src={sdaLogo}
+      src={logoSrc}
       alt="Church Logo"
       onError={handleError}
       className={`${sizeClass} ${className}`}

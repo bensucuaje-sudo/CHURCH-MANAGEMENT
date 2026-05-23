@@ -12,6 +12,10 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'inline',
+        devOptions: {
+          enabled: true,
+          type: 'classic'
+        },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
           name: "SDA Church Treasurer's Portal",
@@ -25,12 +29,12 @@ export default defineConfig(() => {
               type: 'image/png'
             },
             {
-              src: 'sda-logo.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'sda-logo.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
