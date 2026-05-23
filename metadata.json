@@ -1,0 +1,6 @@
+{
+  "name": "Church Management System",
+  "description": "A comprehensive applet for managing members, recording tithe and offering collections, plotting giving trends, printing custom receipts, and exporting reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
