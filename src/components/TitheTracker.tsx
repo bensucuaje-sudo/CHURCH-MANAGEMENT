@@ -312,11 +312,11 @@ export default function TitheTracker({
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-2.5">
                 <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-150/80 shadow-3xs text-center min-w-[90px]">
-                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total Tithes</span>
+                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total Members Tithes</span>
                   <span className="text-xs font-mono font-bold text-blue-600">{preferences.currency} {filteredTotals.tithe.toFixed(2)}</span>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-lg border border-slate-150/80 shadow-3xs text-center min-w-[130px] flex flex-col justify-center">
-                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total COP</span>
+                  <span className="text-[9px] text-slate-400 font-bold block uppercase leading-none mb-0.5">Total Members COP</span>
                   <span className="text-xs font-mono font-bold text-emerald-600 block">{preferences.currency} {filteredTotals.combinedOffering.toFixed(2)}</span>
                   <div className="border-t border-slate-100/80 pt-1 mt-1 space-y-0.5 text-[8px] text-left text-slate-500">
                     {preferences.combinedOfferingAllocations.map(alloc => {
@@ -399,9 +399,16 @@ export default function TitheTracker({
                       </td>
                       <td className="px-6 py-4 text-slate-700 font-mono font-medium">
                         {contrib.combinedOffering > 0 ? (
-                          <div className="flex flex-col">
+                          <div className="flex flex-col space-y-1">
                             <span className="text-emerald-600 font-bold">{preferences.currency} {contrib.combinedOffering.toFixed(2)}</span>
-                            <span className="text-[9px] text-slate-400 font-sans italic">Multi-split plan enabled</span>
+                            <div className="pt-1 border-t border-slate-100/50 space-y-0.5">
+                              {preferences.combinedOfferingAllocations.map(alloc => (
+                                <div key={alloc.id} className="flex justify-between items-center gap-2 text-[8px] leading-tight text-slate-400 font-sans">
+                                  <span className="truncate max-w-[80px]" title={alloc.name}>{alloc.name}</span>
+                                  <span className="font-mono whitespace-nowrap">{preferences.currency}{(contrib.combinedOffering * (alloc.percentage / 100)).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-slate-300">-</span>
@@ -776,9 +783,9 @@ export default function TitheTracker({
                   </button>
                   <button
                     type="submit"
-                    disabled={members.length === 0}
+                    disabled={members.length === 0 || (amountToInput > 0 && Math.abs(totalSum - amountToInput) > 0.01)}
                     className={`px-4 py-2 text-white font-semibold rounded-md text-xs shadow-sm shadow-blue-100 transition flex items-center gap-1.5 ${
-                      members.length === 0 ? 'bg-slate-300 pointer-events-none' : 'bg-blue-600 hover:bg-blue-700 hover:cursor-pointer'
+                      (members.length === 0 || (amountToInput > 0 && Math.abs(totalSum - amountToInput) > 0.01)) ? 'bg-slate-300 pointer-events-none' : 'bg-blue-600 hover:bg-blue-700 hover:cursor-pointer'
                     }`}
                   >
                     🚀 File Contribution & Seal Receipt

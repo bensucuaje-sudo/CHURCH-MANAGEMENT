@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import sdaLogo from '../utils/sda logo.png';
+// Use static path for logo in public folder
+const sdaLogo = '/sda-logo.png';
 
 interface ChurchLogoProps {
   className?: string;

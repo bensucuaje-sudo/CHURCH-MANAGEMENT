@@ -9,7 +9,7 @@ import { INITIAL_MEMBERS, INITIAL_CONTRIBUTIONS, INITIAL_PREFERENCES } from './m
 import { LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
 
 // Subcomponents
-import sdaLogo from './utils/sda logo.png';
+const sdaLogo = '/sda-logo.png';
 import { ChurchLogo } from './components/ChurchLogo';
 import ChurchCharts from './components/ChurchCharts';
 import MemberManager from './components/MemberManager';

@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Member, MembershipStatus, ChurchRole } from '../types';
-import { Search, UserPlus, SlidersHorizontal, Edit3, Mail, Phone, MapPin, Calendar, Heart, Shield, Ban } from 'lucide-react';
+import { Search, UserPlus, SlidersHorizontal, Edit3, Mail, Phone, MapPin, Calendar, Heart, Shield, Ban, ShieldAlert } from 'lucide-react';
 import { exportMembersToCSV } from '../utils/exporter';
 
 interface MemberManagerProps {
@@ -25,6 +25,11 @@ export default function MemberManager({ members, onAddMember, onUpdateMember, on
   // Create / Edit states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  // Deleting Member States
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deletePasswordInput, setDeletePasswordInput] = useState<string>('');
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState<string>('');
 
   // Form Fields
   const [name, setName] = useState('');
@@ -297,7 +302,9 @@ export default function MemberManager({ members, onAddMember, onUpdateMember, on
                           <button
                             type="button"
                             onClick={() => {
-                              onDeleteMember(member.id);
+                              setDeleteTargetId(member.id);
+                              setDeletePasswordInput('');
+                              setDeleteErrorMsg('');
                             }}
                             className="text-xs font-semibold text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 bg-rose-50/50 hover:bg-rose-100 p-1.5 rounded-lg transition duration-150 cursor-pointer animate-fade-in"
                             title="Delete Member"
@@ -469,6 +476,78 @@ export default function MemberManager({ members, onAddMember, onUpdateMember, on
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs shadow-sm shadow-blue-100 transition hover:cursor-pointer"
                 >
                   {editingMember ? 'Save Changes' : 'Add Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MEMBER SECURE PASSWORD CONFIRMATION MODAL */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in shadow-2xl" id="delete-member-verification-modal">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl border border-slate-100 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-5 py-4 text-white flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-lg">
+                <ShieldAlert size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-xs font-black tracking-tight uppercase text-white">Security Action</h3>
+                <p className="text-[10px] text-rose-100/90 font-medium font-sans">Delete Member Profile</p>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (deletePasswordInput === 'password123') {
+                onDeleteMember(deleteTargetId);
+                setDeleteTargetId(null);
+                setDeletePasswordInput('');
+                setDeleteErrorMsg('');
+              } else {
+                setDeleteErrorMsg('Invalid Administrator password.');
+              }
+            }} className="p-5 space-y-4">
+              <p className="text-[11px] text-slate-500 leading-normal">
+                You are trying to delete member record <strong>{deleteTargetId}</strong>. To verify code authority and prevent unauthorized edits, please enter the administrator password.
+              </p>
+
+              {deleteErrorMsg && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                  <ShieldAlert size={13} className="shrink-0" />
+                  <span>{deleteErrorMsg}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Admin Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={deletePasswordInput}
+                  onChange={(e) => setDeletePasswordInput(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
+                  autoFocus
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-lg shadow-sm shadow-rose-100 transition hover:cursor-pointer uppercase tracking-wider"
+                >
+                  Verify & Purge Record
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetId(null)}
+                  className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 text-[11px] font-bold rounded-lg transition uppercase tracking-wider"
+                >
+                  Cancel
                 </button>
               </div>
             </form>
