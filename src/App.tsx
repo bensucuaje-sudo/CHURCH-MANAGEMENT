@@ -13,7 +13,7 @@ import TitheTracker from './components/TitheTracker';
 import ReceiptPrinter from './components/ReceiptPrinter';
 import ChurchConfig from './components/ChurchConfig';
 import AdminPortal from './components/AdminPortal';
-import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download } from 'lucide-react';
+import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download, X, Lock } from 'lucide-react';
 
 const sdaLogo = '/sda-logo.png';
 
@@ -138,9 +138,8 @@ export default function App() {
   // 2. Navigation & Interface States
   const [activeTab, setActiveTab] = useState<'dashboard' | 'members' | 'collections' | 'config'>('dashboard');
   const [currentReceiptContribution, setCurrentReceiptContribution] = useState<Contribution | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    return safeJsonParse('church_isAdmin', false); // Safe default to false (View-Only Mode)
-  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(false); // Always default to false (View-Only Mode) on load
+  const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
 
   // Admin Verification credentials modal state
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
@@ -302,21 +301,20 @@ export default function App() {
             System Management
           </button>
 
-          {isInstallable && (
-            <div className="mx-4 mt-6 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl space-y-2">
-              <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Offline Ready</h4>
-              <p className="text-[10px] text-slate-400 leading-tight">
-                Install as a dedicated desktop app for faster access and offline use.
-              </p>
-              <button
-                onClick={handleInstallClick}
-                className="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded shadow-sm transition cursor-pointer"
-              >
-                <Download size={12} />
-                Install Web App
-              </button>
-            </div>
-          )}
+          <div className="mx-4 mt-6 p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl space-y-2" id="sidebar-install-widget">
+            <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Offline Ready</h4>
+            <p className="text-[10px] text-slate-400 leading-tight col-span-2">
+              Install as a dedicated app for fast access and robust offline registries.
+            </p>
+            <button
+              onClick={isInstallable ? handleInstallClick : () => setShowInstallGuide(true)}
+              className="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded shadow-sm transition cursor-pointer font-sans"
+              id="btn-install-webapp"
+            >
+              <Download size={12} />
+              Install Web App
+            </button>
+          </div>
         </nav>
 
         {/* PROFILE SLOT AT BOTTOM OF SIDEBAR */}
@@ -513,6 +511,82 @@ export default function App() {
           preferences={preferences} 
           onClose={() => setCurrentReceiptContribution(null)} 
         />
+      )}
+
+      {/* PWA INSTALLATION GUIDE MODAL */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" id="pwa-install-guide-modal" onClick={() => setShowInstallGuide(false)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl border border-slate-100 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <Download size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black tracking-tight uppercase">Installation Guide</h3>
+                  <p className="text-[10px] text-blue-100/90 font-medium">Add Portal to Your Device</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowInstallGuide(false)}
+                className="p-1 hover:bg-white/10 rounded-lg transition text-white cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                By installing this portal, you can run it in a full standalone window like a native application with direct offline local files access.
+              </p>
+
+              <div className="space-y-3">
+                {/* On Chrome/Edge */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-150 space-y-1">
+                  <p className="text-[10px] font-black text-slate-700 uppercase tracking-wide">
+                    Chrome / Edge (Desktop & Android)
+                  </p>
+                  <p className="text-[10px] text-slate-505 leading-normal">
+                    Click the <strong>install icon</strong> in the URL bar, or open the menu and select <strong>"Save & Share" → "Install App"</strong>.
+                  </p>
+                </div>
+
+                {/* On iOS / Safari */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-150 space-y-1">
+                  <p className="text-[10px] font-black text-slate-700 uppercase tracking-wide">
+                    Safari (iPhone & iPad)
+                  </p>
+                  <p className="text-[10px] text-slate-505 leading-normal">
+                    Tap the <strong>Share</strong> icon, scroll down, and select <strong>"Add to Home Screen"</strong>.
+                  </p>
+                </div>
+
+                {/* IFrame constraints info */}
+                <div className="p-3 bg-amber-50 border border-amber-150 rounded-xl space-y-1">
+                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-wide">
+                    iFrame Sandbox Notice
+                  </p>
+                  <p className="text-[10px] text-amber-900 leading-normal font-medium">
+                    Because this preview runs inside an iframe, browsers block automatic installation menus. For an instant install, please click <strong className="underline">"Open in New Tab"</strong> at the top of the portal, and use your browser's install menu there!
+                  </p>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowInstallGuide(false)}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-3xs transition cursor-pointer text-center font-sans"
+                >
+                  Close Guide
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ADMIN PORTAL AUTHENTICATION MODAL */}
