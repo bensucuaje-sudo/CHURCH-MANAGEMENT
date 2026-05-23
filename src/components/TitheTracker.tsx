@@ -98,17 +98,6 @@ export default function TitheTracker({
     }
     return value;
   };
-
-  // Live offering plan breakdown simulation based on preferences percentage ratios
-  const simulatedBreakdown = useMemo(() => {
-    const val = copMission || 0;
-    if (val <= 0) return [];
-    return preferences.combinedOfferingAllocations.map(plan => ({
-      ...plan,
-      allotted: val * (plan.percentage / 100)
-    }));
-  }, [copMission, preferences]);
-
   // Handle open entry form & refresh sequential receipt number
   const handleOpenEntry = () => {
     const sequence = contributions.length + 12 + Math.floor(Math.random() * 5); // ensure incremental numbers
@@ -760,25 +749,6 @@ export default function TitheTracker({
                     </div>
                   </div>
                 </div>
-
-                {/* Combined offering plan LIVE allocation preview section */}
-                {((copMission || 0) + (copChurch || 0)) > 0 && (
-                  <div className="bg-emerald-50/40 border border-emerald-200 text-xs p-3.5 rounded-xl space-y-2 animate-fade-in">
-                    <div className="font-bold text-emerald-800 flex items-center justify-between text-[11px]">
-                      <span>COMBINED OFFERING SYSTEMATIC SPLIT BREAKDOWN</span>
-                      <span className="text-emerald-600 font-mono">Plan Total: {preferences.currency} {((copMission || 0) + (copChurch || 0)).toFixed(2)}</span>
-                    </div>
-                    <div className="divide-y divide-emerald-100/60 text-[11px] text-emerald-700">
-                      {simulatedBreakdown.map(b => (
-                        <div key={b.id} className="py-1.5 flex items-center justify-between">
-                           <span className="font-medium">{b.name} <b className="font-normal opacity-70">({b.percentage}%)</b></span>
-                          <span className="font-mono font-bold">{preferences.currency} {b.allotted.toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Memo */}
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">Remarks</label>

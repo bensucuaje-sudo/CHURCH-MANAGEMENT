@@ -226,7 +226,6 @@ export default function SabbathReport({ contributions, members, preferences }: S
             margin: 15mm 12mm 15mm 12mm;
           }
           body {
-            content-visibility: auto;
             background: white !important;
             color: black !important;
             font-size: 11px !important;
@@ -236,13 +235,14 @@ export default function SabbathReport({ contributions, members, preferences }: S
             display: none !important;
           }
           #sabbath-report-modal {
-            position: absolute !important;
+            position: fixed !important;
             inset: 0 !important;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
             display: block !important;
             overflow: visible !important;
+            z-index: 9999999 !important;
           }
           #sabbath-report-modal-content {
             border: none !important;

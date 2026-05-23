@@ -92,15 +92,6 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
   // Safe exit if null
   if (!contribution) return null;
 
-  // Calculates combined offering plan split
-  const offeringAllocationsCalculated = preferences.combinedOfferingAllocations.map(plan => {
-    const share = contribution.combinedOffering * (plan.percentage / 100);
-    return {
-      ...plan,
-      amount: share
-    };
-  });
-
   // Execute browser printing securely
   const triggerBrowserPrint = () => {
     window.print();
@@ -557,40 +548,6 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                     )}
                   </tbody>
                 </table>
-
-                {/* COMBINED OFFERING SYSTEMATIC ALLOCATIONS EXPANDED PANEL (Only if combinedOffering listed) */}
-                {hasCombined && (
-                  <div className="bg-emerald-50/30 border border-emerald-100 rounded-xl p-4 mt-2 print:bg-slate-50 print:border hover:border-emerald-200 transition">
-                    <h3 className="text-[10px] font-bold text-emerald-800 tracking-wider uppercase mb-2">
-                      🎒 DETAILED ALLOCATION CALCULATION BREAKOUT FOR THE COMBINED OFFERING PLAN
-                    </h3>
-                    <p className="text-[10px] text-slate-500 mb-3 leading-relaxed print:hidden">
-                      This church utilizes the <b>Combined Offering Plan</b> model. Your unified offering contribution of <b className="text-slate-700">{preferences.currency} {contribution.combinedOffering.toFixed(2)}</b> is systematically divided according to approved percentage distributions:
-                    </p>
-
-                    <table className="w-full text-[10px]">
-                      <thead>
-                        <tr className="border-b border-emerald-100 text-emerald-800 font-bold opacity-80 uppercase tracking-widest text-[8px] pb-1">
-                          <th className="pb-1 text-left">Recipient Ministry / Allocation Branch</th>
-                          <th className="pb-1 text-center">Approved %</th>
-                          <th className="pb-1 text-right">Calculated Allotment</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-emerald-100/40">
-                        {offeringAllocationsCalculated.map(p => (
-                          <tr key={p.id} className="text-slate-700">
-                            <td className="py-1.5 font-medium">{p.name}</td>
-                            <td className="py-1.5 text-center font-mono">{p.percentage}%</td>
-                            <td className="py-1.5 text-right font-mono font-semibold text-emerald-700">
-                              {preferences.currency} {p.amount.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
                 {/* GRAND TOTAL ROW */}
                 <div className="border-t-2 border-slate-300 pt-4 flex items-center justify-between">
                   <span className="text-xs uppercase font-extrabold text-slate-800 tracking-widest">TOTAL AMOUNT RECEIVED:</span>
