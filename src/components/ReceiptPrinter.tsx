@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Contribution, ChurchPreferences } from '../types';
-import { Printer, X, ShieldAlert, CheckCircle2, BookmarkCheck, Landmark } from 'lucide-react';
+import { Printer, X, ShieldAlert, CheckCircle2, BookmarkCheck, Landmark, Download as DownloadIcon, Loader2 } from 'lucide-react';
 import { ChurchLogo } from './ChurchLogo';
+import html2canvas from 'html2canvas';
 
 /**
  * Converts a numeric contribution amount into standard word format.
@@ -89,12 +90,43 @@ interface ReceiptPrinterProps {
 }
 
 export default function ReceiptPrinter({ contribution, preferences, onClose }: ReceiptPrinterProps) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+
   // Safe exit if null
   if (!contribution) return null;
 
   // Execute browser printing securely
   const triggerBrowserPrint = () => {
     window.print();
+  };
+
+  const downloadAsImage = async () => {
+    if (!receiptRef.current) return;
+    
+    setIsCapturing(true);
+    try {
+      // Small delay to ensure any fonts/images are rendered
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const image = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.download = `receipt-${contribution.receiptNo}.png`;
+      link.href = image;
+      link.click();
+    } catch (error) {
+      console.error('Error capturing receipt as image:', error);
+      alert('Failed to generate image. Please try the print option instead.');
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const hasTithe = contribution.tithe > 0;
@@ -120,23 +152,31 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
             print-color-adjust: exact !important;
           }
 
-          /* Hide siblings and center the receipt overlay */
-          body > #root > *,
-          body > div:not(#receipt-modal) {
+          /* Critical: Ensure root container doesn't hide everything */
+          #root, #church-app-root, #main-content-panel, #workspace-canvas {
+            display: block !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          /* Hide everything except the modal */
+          .print\\:hidden, aside, header, footer, #sidebar, #app-header, #app-footer, .bg-slate-50 {
             display: none !important;
           }
-          
+
+          /* Force modal to fill screen for print */
           #receipt-modal {
-            position: fixed !important;
-            inset: 0 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 105mm !important;
             height: 148mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
             background: #fff !important;
-            z-index: 9999999 !important;
-            overflow: hidden !important;
+            padding: 0 !important;
+            margin: 0 !important;
             display: block !important;
+            z-index: 9999 !important;
           }
 
           #receipt-modal-inner {
@@ -170,136 +210,34 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
 
           .a6-receipt-card {
             border: none !important;
-            font-size: 7.2px !important;
-            line-height: 1.15 !important;
+            font-size: 7.5px !important;
+            line-height: 1.2 !important;
           }
 
           .a6-receipt-card h1 {
-            font-size: 10px !important;
-            line-height: 1.15 !important;
-            margin-top: 1px !important;
+            font-size: 11px !important;
+            margin-top: 1mm !important;
           }
 
           .a6-receipt-card h2 {
-            font-size: 7px !important;
-            line-height: 1.15 !important;
-          }
-
-          .a6-receipt-card h3 {
-            font-size: 6px !important;
-            line-height: 1.15 !important;
-            margin-bottom: 2px !important;
-          }
-
-          .a6-receipt-card th {
-            font-size: 6px !important;
-            padding-bottom: 1px !important;
-          }
-
-          .a6-receipt-card td {
-            font-size: 7px !important;
-            padding-top: 2px !important;
-            padding-bottom: 2px !important;
+            font-size: 8px !important;
           }
 
           .a6-receipt-card .text-base,
           .a6-receipt-card .text-lg {
-            font-size: 9px !important;
-          }
-
-          .a6-receipt-card .text-[10px] {
-            font-size: 6px !important;
-          }
-
-          .a6-receipt-card .text-[9px] {
-            font-size: 5.5px !important;
-          }
-
-          .a6-receipt-card .pb-6 {
-            padding-bottom: 2px !important;
-            margin-bottom: 2px !important;
-          }
-
-          .a6-receipt-card .py-6 {
-            padding-top: 2px !important;
-            padding-bottom: 2px !important;
-          }
-
-          .a6-receipt-card .py-3 {
-            padding-top: 1px !important;
-            padding-bottom: 1px !important;
-          }
-
-          .a6-receipt-card .py-2.5 {
-            padding-top: 0.8px !important;
-            padding-bottom: 0.8px !important;
-          }
-
-          .a6-receipt-card .py-1.5 {
-            padding-top: 0.5px !important;
-            padding-bottom: 0.5px !important;
-          }
-
-          .a6-receipt-card .mb-6 {
-            margin-bottom: 2px !important;
-          }
-
-          .a6-receipt-card .mt-6 {
-            margin-top: 2px !important;
-          }
-
-          .a6-receipt-card .mt-2 {
-            margin-top: 1px !important;
-          }
-
-          .a6-receipt-grid {
-            padding-top: 1.5px !important;
-            padding-bottom: 1.5px !important;
-            margin-bottom: 1.5px !important;
-          }
-
-          .a6-receipt-card .space-y-5 > * + * {
-            margin-top: 2px !important;
-          }
-
-          .a6-receipt-card .space-y-4 > * + * {
-            margin-top: 1px !important;
-          }
-
-          .a6-receipt-signature-area {
-            padding-top: 5px !important;
-            margin-top: 5px !important;
-            gap: 10px !important;
-          }
-
-          .a6-receipt-signature-area .space-y-4 > * + * {
-            margin-top: 1px !important;
-          }
-
-          .a6-receipt-signature-line {
-            padding-bottom: 1px !important;
-            max-width: 70px !important;
-          }
-
-          .a6-receipt-card .pt-8 {
-            padding-top: 2px !important;
+            font-size: 10px !important;
           }
 
           .a6-receipt-icon {
             width: 12mm !important;
             height: 14mm !important;
             border-radius: 2mm !important;
-            margin-top: 0 !important;
             margin-bottom: 2mm !important;
           }
 
-          .a6-receipt-watermark {
-            opacity: 0.01 !important;
-          }
-
-          .a6-receipt-watermark svg {
-            width: 80px !important;
-            height: 80px !important;
+          .a6-receipt-signature-line {
+            border-bottom-width: 0.5pt !important;
+            min-height: 6mm !important;
           }
         }
       `}</style>
@@ -312,12 +250,20 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
             <span className="text-sm font-bold text-slate-800">Print Preview Center</span>
           </div>
           <div className="flex items-center gap-2">
+             <button
+              onClick={downloadAsImage}
+              disabled={isCapturing}
+              className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5 hover:cursor-pointer disabled:opacity-50"
+            >
+              {isCapturing ? <Loader2 size={14} className="animate-spin" /> : <DownloadIcon size={14} />}
+              <span>{isCapturing ? 'Generating...' : 'Save as Image'}</span>
+            </button>
             <button
               onClick={triggerBrowserPrint}
               className="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5 hover:cursor-pointer"
             >
               <Printer size={14} />
-              <span>Print Official Receipt</span>
+              <span>Print Receipt</span>
             </button>
             <button
               onClick={onClose}
@@ -333,14 +279,14 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
         <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-slate-50/20 print:bg-white print:p-0 print:overflow-visible">
           
           {/* RECEIPT CONTAINER CARD PORTION */}
-          <div id="print-receipt-area" className="w-full max-w-2xl mx-auto bg-white border-2 border-slate-200/80 rounded-2xl p-6 md:p-8 relative shadow-sm print:border-none print:shadow-none print:m-0 print:p-0 a6-receipt-card">
+          <div ref={receiptRef} id="print-receipt-area" className="w-full max-w-2xl mx-auto bg-white border-2 border-slate-200/80 rounded-2xl p-6 md:p-8 relative shadow-sm print:border-none print:shadow-none print:m-0 print:p-0 a6-receipt-card">
             
             {/* Internal layout border */}
             <div className="border border-slate-100 rounded-xl p-5 md:p-7 print:border-none">
               
               {/* Church Letterhead */}
               <div className="text-center space-y-1 pb-6 border-b border-dashed border-slate-200">
-                <ChurchLogo size="receipt" />
+                <ChurchLogo size="receipt" className="a6-receipt-icon mx-auto" />
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight mt-3">{preferences.churchName}</h1>
                 <p className="text-[10px] text-slate-500 font-medium">{preferences.churchAddress}</p>
                 <p className="text-[9px] text-slate-400 font-mono">Contact: {preferences.churchEmail} • Stewardship Office</p>
@@ -376,10 +322,8 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {/* Check if has new categorized fields or legacy fields */}
                     {contribution.copMission !== undefined ? (
                       <>
-                        {/* MISSION FUNDS SECTIONS */}
                         <tr className="bg-blue-50/30 print:bg-slate-100/30">
                           <td colSpan={2} className="py-1 px-2.5 text-[9px] uppercase font-extrabold text-blue-800 tracking-wider">
                             Mission Funds
@@ -405,7 +349,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             </td>
                           </tr>
                         )}
-                        {contribution.harvestIngathering && contribution.harvestIngathering > 0 ? (
+                        {contribution.harvestIngathering && contribution.harvestIngathering > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Harvest Ingathering</div>
@@ -414,8 +358,8 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                               {preferences.currency} {contribution.harvestIngathering.toFixed(2)}
                             </td>
                           </tr>
-                        ) : null}
-                        {contribution.hopeRadio && contribution.hopeRadio > 0 ? (
+                        )}
+                        {contribution.hopeRadio && contribution.hopeRadio > 0 &&(
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Hope Radio/TV</div>
@@ -424,8 +368,8 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                               {preferences.currency} {contribution.hopeRadio.toFixed(2)}
                             </td>
                           </tr>
-                        ) : null}
-                        {contribution.sulads && contribution.sulads > 0 ? (
+                        )}
+                        {contribution.sulads && contribution.sulads > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Sulads</div>
@@ -434,8 +378,8 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                               {preferences.currency} {contribution.sulads.toFixed(2)}
                             </td>
                           </tr>
-                        ) : null}
-                        {contribution.specifiedOffering && contribution.specifiedOffering > 0 ? (
+                        )}
+                        {contribution.specifiedOffering && contribution.specifiedOffering > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">{contribution.specifiedOfferingName || "Specified Offering"}</div>
@@ -444,15 +388,14 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                               {preferences.currency} {contribution.specifiedOffering.toFixed(2)}
                             </td>
                           </tr>
-                        ) : null}
+                        )}
 
-                        {/* CHURCH FUNDS SECTIONS */}
                         <tr className="bg-emerald-50/20 print:bg-slate-100/30">
                           <td colSpan={2} className="py-1 px-2.5 text-[9px] uppercase font-extrabold text-emerald-800 tracking-wider">
                             Church Funds
                           </td>
                         </tr>
-                        {contribution.copChurch && contribution.copChurch > 0 ? (
+                        {contribution.copChurch && contribution.copChurch > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-800">COP</div>
@@ -461,7 +404,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                               {preferences.currency} {contribution.copChurch.toFixed(2)}
                             </td>
                           </tr>
-                        ) : null}
+                        )}
                         {contribution.buildingFund > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
@@ -475,12 +418,10 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                       </>
                     ) : (
                       <>
-                        {/* Legacy Rendering */}
                         {hasTithe && (
                           <tr className="text-slate-700">
                             <td className="py-3">
                               <div className="font-bold text-slate-800">Spiritual Tithes (10% General Devotional)</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5 print:hidden">Assumed covenant pledge devotion</div>
                             </td>
                             <td className="py-3 text-right font-mono font-bold text-slate-950">
                               {preferences.currency} {contribution.tithe.toFixed(2)}
@@ -492,7 +433,6 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                           <tr className="text-slate-700">
                             <td className="py-3">
                               <div className="font-bold text-emerald-800">Combined Offering Plan (Unified Systematic Offering)</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5 print:hidden">Auto-allocated to regional and local missions list</div>
                             </td>
                             <td className="py-3 text-right font-mono font-bold text-emerald-700">
                               {preferences.currency} {contribution.combinedOffering.toFixed(2)}
@@ -503,7 +443,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                         {contribution.buildingFund > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2.5">
-                              <div className="font-bold text-slate-700">🏛️ Sanctuary & Building Capital Fund</div>
+                              <div className="font-bold text-slate-700">Sanctuary & Building Capital Fund</div>
                             </td>
                             <td className="py-2.5 text-right font-mono text-slate-800">
                               {preferences.currency} {contribution.buildingFund.toFixed(2)}
@@ -514,7 +454,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                         {contribution.missions > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2.5">
-                              <div className="font-bold text-slate-700">🌐 Global Missionary Outreach Initiative</div>
+                              <div className="font-bold text-slate-700">Global Missionary Outreach Initiative</div>
                             </td>
                             <td className="py-2.5 text-right font-mono text-slate-800">
                               {preferences.currency} {contribution.missions.toFixed(2)}
@@ -525,7 +465,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                         {contribution.youth > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2.5">
-                              <div className="font-bold text-slate-700">🎒 Youth Ministries & Youth Camps</div>
+                              <div className="font-bold text-slate-700">Youth Ministries & Youth Camps</div>
                             </td>
                             <td className="py-2.5 text-right font-mono text-slate-800">
                               {preferences.currency} {contribution.youth.toFixed(2)}
@@ -536,7 +476,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                         {contribution.others > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2.5">
-                              <div className="font-bold text-slate-700">🕯️ Restricted Specific / Local Needs Allocation</div>
+                              <div className="font-bold text-slate-700">Restricted Specific / Local Needs Allocation</div>
                             </td>
                             <td className="py-2.5 text-right font-mono text-slate-800">
                               {preferences.currency} {contribution.others.toFixed(2)}

@@ -13,7 +13,7 @@ import TitheTracker from './components/TitheTracker';
 import ReceiptPrinter from './components/ReceiptPrinter';
 import ChurchConfig from './components/ChurchConfig';
 import AdminPortal from './components/AdminPortal';
-import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download, X, Lock } from 'lucide-react';
+import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download, X, Lock, ExternalLink } from 'lucide-react';
 
 const sdaLogo = '/sda-logo.png';
 
@@ -306,14 +306,27 @@ export default function App() {
             <p className="text-[10px] text-slate-400 leading-tight col-span-2">
               Install as a dedicated app for fast access and robust offline registries.
             </p>
-            <button
-              onClick={isInstallable ? handleInstallClick : () => setShowInstallGuide(true)}
-              className="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded shadow-sm transition cursor-pointer font-sans"
-              id="btn-install-webapp"
-            >
-              <Download size={12} />
-              Install Web App
-            </button>
+            <div className="space-y-1.5 pt-1">
+              <button
+                onClick={isInstallable ? handleInstallClick : () => setShowInstallGuide(true)}
+                className="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded shadow-sm transition cursor-pointer font-sans"
+                id="btn-install-webapp"
+              >
+                <Download size={12} />
+                Install Web App
+              </button>
+              
+              {/* Force Browser to Open out of Sandbox to allow URL Bar install */}
+              <a 
+                href={window.location.href} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-bold rounded shadow-sm transition cursor-pointer font-sans no-underline"
+              >
+                <ExternalLink size={12} />
+                Open In New Tab
+              </a>
+            </div>
           </div>
         </nav>
 
