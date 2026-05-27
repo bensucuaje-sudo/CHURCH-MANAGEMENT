@@ -117,6 +117,11 @@ export default function SabbathReport({ contributions, members, preferences }: S
     let othersSum = 0;
     let totalSum = 0;
     let copChurchSum = 0;
+    let copMissionSum = 0;
+    let harvestIngatheringSum = 0;
+    let hopeRadioSum = 0;
+    let suladsSum = 0;
+    let specifiedOfferingSum = 0;
     
     const donors = new Set<string>();
     const paymentMethods: { [key: string]: { amount: number; count: number } } = {
@@ -137,7 +142,14 @@ export default function SabbathReport({ contributions, members, preferences }: S
       youthSum += c.youth || 0;
       othersSum += c.others || 0;
       totalSum += c.total || 0;
-      copChurchSum += c.copChurch || 0;
+      
+      const copVal = c.combinedOffering || 0;
+      copChurchSum += c.copChurch !== undefined ? c.copChurch : (copVal * 0.5);
+      copMissionSum += c.copMission !== undefined ? c.copMission : (copVal * 0.5);
+      harvestIngatheringSum += c.harvestIngathering || 0;
+      hopeRadioSum += c.hopeRadio || 0;
+      suladsSum += c.sulads || 0;
+      specifiedOfferingSum += c.specifiedOffering || 0;
 
       if (c.memberId) donors.add(c.memberId);
 
@@ -167,6 +179,11 @@ export default function SabbathReport({ contributions, members, preferences }: S
       othersSum,
       totalSum,
       copChurchSum,
+      copMissionSum,
+      harvestIngatheringSum,
+      hopeRadioSum,
+      suladsSum,
+      specifiedOfferingSum,
       uniqueDonorsCount: donors.size,
       receiptCount: sabbathContributions.length,
       paymentMethods,
@@ -567,7 +584,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
 
                 {/* Other Funds */}
                 <div className="p-4 bg-amber-50/30 border border-amber-100 rounded-xl relative overflow-hidden printable-card">
-                  <p className="text-[9px] text-amber-900/60 font-black uppercase tracking-wider">OTHER LOCAL FUNDS</p>
+                  <p className="text-[9px] text-amber-900/60 font-black uppercase tracking-wider">OTHER FUNDS</p>
                   <p className="text-base font-black text-amber-900 font-mono mt-1">
                     {preferences.currency} {(stats.buildingFundSum + stats.missionsSum + stats.youthSum + stats.othersSum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
@@ -578,29 +595,123 @@ export default function SabbathReport({ contributions, members, preferences }: S
             {/* SYSTEMATIC ALLOCATIONS BREAKDOWN - DETAILED SHARES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               
-              {/* Tithe systematic distribution */}
-              <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
-                    MISSION FUNDS
-                  </h4>
-                  <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                    Total: {preferences.currency} {stats.titheSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+              {/* Mission systematic distribution */}
+              {(() => {
+                const totalMissionSum = stats.titheSum + stats.copMissionSum + stats.harvestIngatheringSum + stats.hopeRadioSum + stats.suladsSum + stats.specifiedOfferingSum;
+                const tithePercent = totalMissionSum > 0 ? Math.round((stats.titheSum / totalMissionSum) * 100) : 0;
+                const copMissionPercent = totalMissionSum > 0 ? Math.round((stats.copMissionSum / totalMissionSum) * 100) : 0;
+                const harvestPercent = totalMissionSum > 0 ? Math.round((stats.harvestIngatheringSum / totalMissionSum) * 100) : 0;
+                const hopePercent = totalMissionSum > 0 ? Math.round((stats.hopeRadioSum / totalMissionSum) * 100) : 0;
+                const suladsPercent = totalMissionSum > 0 ? Math.round((stats.suladsSum / totalMissionSum) * 100) : 0;
+                const specifiedPercent = totalMissionSum > 0 ? Math.round((stats.specifiedOfferingSum / totalMissionSum) * 100) : 0;
 
-                <div className="space-y-2.5">
-                  {titheAllocations.map(alloc => (
-                    <div key={alloc.id} className="space-y-1">
-                      <div className="flex justify-end text-[11px]">
-                        <span className="font-mono text-slate-705 font-bold leading-none">
-                          {preferences.currency} {alloc.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
+                return (
+                  <div className="border border-slate-100 rounded-xl p-4 space-y-3 shadow-3xs printable-card">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <h4 className="text-[10px] font-black uppercase text-slate-800 tracking-wide flex items-center gap-1.5">
+                        MISSION FUNDS
+                      </h4>
+                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                        Total: {preferences.currency} {totalMissionSum.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
+
+                    <div className="space-y-2.5">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px]">
+                          <span className="font-bold text-slate-800 font-sans leading-tight">
+                            Tithe Devotion (100%)
+                          </span>
+                          <span className="font-mono text-slate-705 font-bold leading-none">
+                            {preferences.currency} {stats.titheSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({tithePercent}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-blue-600 h-full" style={{ width: `${tithePercent}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px]">
+                          <span className="font-bold text-slate-800 font-sans leading-tight">
+                            COP (50%)
+                          </span>
+                          <span className="font-mono text-slate-705 font-bold leading-none">
+                            {preferences.currency} {stats.copMissionSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({copMissionPercent}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-blue-600 h-full" style={{ width: `${copMissionPercent}%` }}></div>
+                        </div>
+                      </div>
+
+                      {stats.harvestIngatheringSum > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="font-bold text-slate-800 font-sans leading-tight">
+                              Harvest Ingathering
+                            </span>
+                            <span className="font-mono text-slate-705 font-bold leading-none">
+                              {preferences.currency} {stats.harvestIngatheringSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({harvestPercent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-600 h-full" style={{ width: `${harvestPercent}%` }}></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {stats.hopeRadioSum > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="font-bold text-slate-800 font-sans leading-tight">
+                              Hope Radio/TV
+                            </span>
+                            <span className="font-mono text-slate-705 font-bold leading-none">
+                              {preferences.currency} {stats.hopeRadioSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({hopePercent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-600 h-full" style={{ width: `${hopePercent}%` }}></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {stats.suladsSum > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="font-bold text-slate-800 font-sans leading-tight">
+                              Sulads
+                            </span>
+                            <span className="font-mono text-slate-705 font-bold leading-none">
+                              {preferences.currency} {stats.suladsSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({suladsPercent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-600 h-full" style={{ width: `${suladsPercent}%` }}></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {stats.specifiedOfferingSum > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="font-bold text-slate-800 font-sans leading-tight">
+                              Specified Offering
+                            </span>
+                            <span className="font-mono text-slate-705 font-bold leading-none">
+                              {preferences.currency} {stats.specifiedOfferingSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({specifiedPercent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-600 h-full" style={{ width: `${specifiedPercent}%` }}></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Combined offering plan allocations */}
               {(() => {

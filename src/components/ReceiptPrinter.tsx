@@ -83,6 +83,156 @@ function amountToWords(amount: number, currencyCode: string = 'PHP'): string {
   return words;
 }
 
+// Global Parser & Converter for oklch / oklab Safari and Chrome colors
+function parsePercentOrFloat(val: string): number {
+  if (val.endsWith('%')) {
+    return parseFloat(val) / 100;
+  }
+  return parseFloat(val);
+}
+
+function oklchToRgbaString(L: number, C: number, H: number, alpha: number): string {
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = Math.pow(Math.max(0, l_), 3);
+  const m = Math.pow(Math.max(0, m_), 3);
+  const s = Math.pow(Math.max(0, s_), 3);
+
+  const r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bVal = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  const gamma = (cVal: number): number => {
+    return cVal > 0.0031308
+      ? 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055
+      : 12.92 * cVal;
+  };
+
+  const rS = Math.min(255, Math.max(0, Math.round(gamma(r) * 255)));
+  const gS = Math.min(255, Math.max(0, Math.round(gamma(g) * 255)));
+  const bS = Math.min(255, Math.max(0, Math.round(gamma(bVal) * 255)));
+
+  return `rgba(${rS}, ${gS}, ${bS}, ${alpha})`;
+}
+
+function oklabToRgbaString(L: number, a: number, b: number, alpha: number): string {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = Math.pow(Math.max(0, l_), 3);
+  const m = Math.pow(Math.max(0, m_), 3);
+  const s = Math.pow(Math.max(0, s_), 3);
+
+  const r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bVal = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  const gamma = (cVal: number): number => {
+    return cVal > 0.0031308
+      ? 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055
+      : 12.92 * cVal;
+  };
+
+  const rS = Math.min(255, Math.max(0, Math.round(gamma(r) * 255)));
+  const gS = Math.min(255, Math.max(0, Math.round(gamma(g) * 255)));
+  const bS = Math.min(255, Math.max(0, Math.round(gamma(bVal) * 255)));
+
+  return `rgba(${rS}, ${gS}, ${bS}, ${alpha})`;
+}
+
+function replaceOklchAndOklab(str: string): string {
+  if (typeof str !== 'string') return str;
+  let result = str;
+
+  const oklchGlobalRegex = /oklch\s*\(\s*([\d.%\-]+)\s+([\d.%\-]+)\s+([\d.%\-]+)(?:\s*\/\s*([\d.%\-]+))?\s*\)/gi;
+  result = result.replace(oklchGlobalRegex, (match, p1, p2, p3, p4) => {
+    try {
+      const l = parsePercentOrFloat(p1);
+      const c = parsePercentOrFloat(p2);
+      let hStr = p3;
+      if (hStr.endsWith('deg')) hStr = hStr.slice(0, -3);
+      const h = parseFloat(hStr);
+      const alpha = p4 ? parsePercentOrFloat(p4) : 1;
+      return oklchToRgbaString(l, c, h, alpha);
+    } catch {
+      return match;
+    }
+  });
+
+  const oklchCommaGlobalRegex = /oklch\s*\(\s*([\d.%\-]+)\s*,\s*([\d.%\-]+)\s*,\s*([\d.%\-]+)(?:\s*,\s*([\d.%\-]+))?\s*\)/gi;
+  result = result.replace(oklchCommaGlobalRegex, (match, p1, p2, p3, p4) => {
+    try {
+      const l = parsePercentOrFloat(p1);
+      const c = parsePercentOrFloat(p2);
+      let hStr = p3;
+      if (hStr.endsWith('deg')) hStr = hStr.slice(0, -3);
+      const h = parseFloat(hStr);
+      const alpha = p4 ? parsePercentOrFloat(p4) : 1;
+      return oklchToRgbaString(l, c, h, alpha);
+    } catch {
+      return match;
+    }
+  });
+
+  const oklabGlobalRegex = /oklab\s*\(\s*([\d.%\-]+)\s+([\d.%\-]+)\s+([\d.%\-]+)(?:\s*\/\s*([\d.%\-]+))?\s*\)/gi;
+  result = result.replace(oklabGlobalRegex, (match, p1, p2, p3, p4) => {
+    try {
+      const l = parsePercentOrFloat(p1);
+      const a = parsePercentOrFloat(p2);
+      const b = parsePercentOrFloat(p3);
+      const alpha = p4 ? parsePercentOrFloat(p4) : 1;
+      return oklabToRgbaString(l, a, b, alpha);
+    } catch {
+      return match;
+    }
+  });
+
+  const oklabCommaGlobalRegex = /oklab\s*\(\s*([\d.%\-]+)\s*,\s*([\d.%\-]+)\s*,\s*([\d.%\-]+)(?:\s*,\s*([\d.%\-]+))?\s*\)/gi;
+  result = result.replace(oklabCommaGlobalRegex, (match, p1, p2, p3, p4) => {
+    try {
+      const l = parsePercentOrFloat(p1);
+      const a = parsePercentOrFloat(p2);
+      const b = parsePercentOrFloat(p3);
+      const alpha = p4 ? parsePercentOrFloat(p4) : 1;
+      return oklabToRgbaString(l, a, b, alpha);
+    } catch {
+      return match;
+    }
+  });
+
+  return result;
+}
+
+function createStyleProxy(style: CSSStyleDeclaration): CSSStyleDeclaration {
+  return new Proxy(style, {
+    get(target, prop) {
+      const val = target[prop as any];
+      if (typeof val === 'string') {
+        if (val.includes('oklch') || val.includes('oklab')) {
+          return replaceOklchAndOklab(val);
+        }
+      }
+      if (typeof val === 'function' && prop === 'getPropertyValue') {
+        return (propertyName: string) => {
+          const realVal = target.getPropertyValue(propertyName);
+          if (typeof realVal === 'string' && (realVal.includes('oklch') || realVal.includes('oklab'))) {
+            return replaceOklchAndOklab(realVal);
+          }
+          return realVal;
+        };
+      }
+      return val;
+    }
+  });
+}
+
 interface ReceiptPrinterProps {
   contribution: Contribution | null;
   preferences: ChurchPreferences;
@@ -105,6 +255,19 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
     if (!receiptRef.current) return;
     
     setIsCapturing(true);
+
+    const originalGetComputedStyle = window.getComputedStyle;
+    const helperGetComputedStyle = (elt: Element, pseudoElt?: string) => {
+      const style = originalGetComputedStyle(elt, pseudoElt);
+      return createStyleProxy(style);
+    };
+
+    // Override local computed style read
+    window.getComputedStyle = helperGetComputedStyle as any;
+    if (window.document.defaultView) {
+      window.document.defaultView.getComputedStyle = helperGetComputedStyle as any;
+    }
+
     try {
       // Small delay to ensure any fonts/images are rendered
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -113,7 +276,79 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
         scale: 2, // Higher quality
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          // Wrap computing queries inside the cloned document context
+          if (clonedDoc.defaultView) {
+            clonedDoc.defaultView.getComputedStyle = helperGetComputedStyle as any;
+          }
+
+          // Append fallback styles for Tailwind CSS v4 oklab/oklch variables and utility classes
+          const styleEl = clonedDoc.createElement('style');
+          styleEl.textContent = `
+            :root {
+              --color-slate-50: #f8fafc !important;
+              --color-slate-100: #f1f5f9 !important;
+              --color-slate-200: #e2e8f0 !important;
+              --color-slate-300: #cbd5e1 !important;
+              --color-slate-400: #94a3b8 !important;
+              --color-slate-500: #64748b !important;
+              --color-slate-600: #475569 !important;
+              --color-slate-700: #334155 !important;
+              --color-slate-800: #1e293b !important;
+              --color-slate-900: #0f172a !important;
+              --color-slate-950: #020617 !important;
+              --color-blue-50: #eff6ff !important;
+              --color-blue-100: #dbeafe !important;
+              --color-blue-600: #2563eb !important;
+              --color-blue-800: #1e40af !important;
+              --color-emerald-50: #ecfdf5 !important;
+              --color-emerald-100: #d1fae5 !important;
+              --color-emerald-600: #059669 !important;
+              --color-emerald-800: #065f46 !important;
+            }
+            .bg-white { background-color: #ffffff !important; }
+            .bg-slate-50 { background-color: #f8fafc !important; }
+            .bg-blue-50\\/30 { background-color: rgba(239, 246, 255, 0.3) !important; }
+            .bg-emerald-50\\/20 { background-color: rgba(236, 253, 245, 0.2) !important; }
+            .text-slate-900 { color: #0f172a !important; }
+            .text-slate-950 { color: #020617 !important; }
+            .text-slate-800 { color: #1e293b !important; }
+            .text-slate-700 { color: #334155 !important; }
+            .text-slate-500 { color: #64748b !important; }
+            .text-slate-400 { color: #94a3b8 !important; }
+            .text-blue-800 { color: #1e40af !important; }
+            .text-emerald-800 { color: #065f46 !important; }
+            .border-slate-100 { border-color: #f1f5f9 !important; }
+            .border-slate-200 { border-color: #cbd5e1 !important; }
+            .border-slate-300 { border-color: #cbd5e1 !important; }
+            .border-slate-200\\/80 { border-color: rgba(203, 213, 225, 0.8) !important; }
+            #print-receipt-area { border: 2px solid #cbd5e1 !important; }
+          `;
+          clonedDoc.head.appendChild(styleEl);
+
+          // Proactively parse and replace inline oklab/oklch values on any cloned elements
+          const allEl = clonedDoc.querySelectorAll('*');
+          allEl.forEach((node) => {
+            if (node instanceof HTMLElement) {
+              const styles = window.getComputedStyle(node);
+              const colorProps = ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'];
+              
+              colorProps.forEach(prop => {
+                const val = styles[prop as any];
+                if (val && (val.includes('oklab') || val.includes('oklch'))) {
+                  if (prop === 'backgroundColor') {
+                    node.style.backgroundColor = '#ffffff';
+                  } else if (prop === 'color') {
+                    node.style.color = '#1e293b';
+                  } else if (prop.startsWith('border')) {
+                    node.style.setProperty(prop, '#cbd5e1', 'important');
+                  }
+                }
+              });
+            }
+          });
+        }
       });
       
       const image = canvas.toDataURL('image/png', 1.0);
@@ -125,6 +360,11 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
       console.error('Error capturing receipt as image:', error);
       alert('Failed to generate image. Please try the print option instead.');
     } finally {
+      // Safely restore global getComputedStyle overrides
+      window.getComputedStyle = originalGetComputedStyle;
+      if (window.document.defaultView) {
+        window.document.defaultView.getComputedStyle = originalGetComputedStyle;
+      }
       setIsCapturing(false);
     }
   };
@@ -349,7 +589,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             </td>
                           </tr>
                         )}
-                        {contribution.harvestIngathering && contribution.harvestIngathering > 0 && (
+                        {(contribution.harvestIngathering ?? 0) > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Harvest Ingathering</div>
@@ -359,7 +599,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             </td>
                           </tr>
                         )}
-                        {contribution.hopeRadio && contribution.hopeRadio > 0 &&(
+                        {(contribution.hopeRadio ?? 0) > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Hope Radio/TV</div>
@@ -369,7 +609,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             </td>
                           </tr>
                         )}
-                        {contribution.sulads && contribution.sulads > 0 && (
+                        {(contribution.sulads ?? 0) > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">Sulads</div>
@@ -379,7 +619,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             </td>
                           </tr>
                         )}
-                        {contribution.specifiedOffering && contribution.specifiedOffering > 0 && (
+                        {(contribution.specifiedOffering ?? 0) > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-700">{contribution.specifiedOfferingName || "Specified Offering"}</div>
@@ -395,7 +635,7 @@ export default function ReceiptPrinter({ contribution, preferences, onClose }: R
                             Church Funds
                           </td>
                         </tr>
-                        {contribution.copChurch && contribution.copChurch > 0 && (
+                        {(contribution.copChurch ?? 0) > 0 && (
                           <tr className="text-slate-700 text-xs">
                             <td className="py-2 pl-4">
                               <div className="font-bold text-slate-800">COP</div>

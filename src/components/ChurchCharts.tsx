@@ -435,7 +435,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-3 h-3 bg-violet-600 rounded-2xs"></span>
-                      <span>Others/Local Funds</span>
+                      <span>Other Funds</span>
                     </div>
                   </div>
                 </div>
@@ -458,7 +458,7 @@ export default function ChurchCharts({ contributions, members, preferences }: Ch
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-slate-400">Other Local Funds</div>
+                        <div className="text-xs text-slate-400">Other Funds</div>
                         <div className="text-lg font-bold text-purple-600">
                           {preferences.currency} {contributions.reduce((s, c) => s + (c.buildingFund + c.missions + c.youth + c.others), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
