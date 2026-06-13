@@ -416,23 +416,23 @@ export default function SabbathReport({ contributions, members, preferences }: S
           
           /* General typography compression */
           h1, .text-base {
-            font-size: 14px !important;
+            font-size: 19px !important;
             line-height: normal !important;
           }
           h2, .text-sm {
-            font-size: 12.5px !important;
+            font-size: 17.5px !important;
             line-height: normal !important;
           }
           h3, h4, .text-xs, .text-\[11px\], .text-\[10px\], .text-\[9px\] {
-            font-size: 11px !important;
+            font-size: 16px !important;
             line-height: normal !important;
           }
           span, p, td, th {
-            font-size: 11px !important;
+            font-size: 16px !important;
             line-height: normal !important;
           }
           .text-lg {
-            font-size: 14px !important;
+            font-size: 19px !important;
             line-height: normal !important;
           }
           /* Stat card value display metric sizes */
@@ -440,7 +440,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
           .text-base.font-mono,
           td .text-emerald-600,
           span .text-emerald-600 {
-            font-size: 13px !important;
+            font-size: 18px !important;
             font-weight: 900 !important;
           }
           
@@ -458,11 +458,11 @@ export default function SabbathReport({ contributions, members, preferences }: S
             height: 24px !important;
           }
           #signatures-block .text-xs {
-            font-size: 11px !important;
+            font-size: 16px !important;
             font-weight: 800 !important;
           }
           #signatures-block .text-\[10px\] {
-            font-size: 10.5px !important;
+            font-size: 15.5px !important;
             margin-top: 2px !important;
           }
           
@@ -480,7 +480,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
           }
           
           .compact-text {
-            font-size: 13px !important;
+            font-size: 18px !important;
             color: black !important;
           }
         }
@@ -498,7 +498,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Sabbath selection dropdown */}
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Select Sabbath:</span>
@@ -515,16 +515,21 @@ export default function SabbathReport({ contributions, members, preferences }: S
             </select>
           </div>
 
-          <button
-            onClick={handlePrint}
-            disabled={sabbathContributions.length === 0}
-            className={`flex items-center gap-2 px-4 py-2 text-white bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold transition shadow-3xs cursor-pointer ${
-              sabbathContributions.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
-            }`}
-          >
-            <Printer size={13} />
-            <span>Print Report (PDF)</span>
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={handlePrint}
+              disabled={sabbathContributions.length === 0}
+              className={`flex items-center gap-2 px-4 py-2 text-white bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold transition shadow-3xs cursor-pointer ${
+                sabbathContributions.length === 0 ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
+            >
+              <Printer size={13} />
+              <span>Print Report (PDF)</span>
+            </button>
+            <span className="text-[9px] text-slate-400 font-medium text-right max-w-[200px] leading-tight block">
+              ⚠️ If print doesn't launch, click <b>Open in New Tab</b> (↗) at top-right to print natively.
+            </span>
+          </div>
         </div>
       </div>
 
