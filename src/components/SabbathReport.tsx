@@ -229,12 +229,40 @@ export default function SabbathReport({ contributions, members, preferences }: S
     return [...sabbathContributions].sort((a, b) => a.receiptNo.localeCompare(b.receiptNo));
   }, [sabbathContributions]);
 
+  const [printError, setPrintError] = useState<string | null>(null);
+
   const handlePrint = () => {
-    window.print();
+    try {
+      setPrintError(null);
+      window.print();
+    } catch (err) {
+      console.error("Print failed:", err);
+      setPrintError(
+        "Browser sandbox restricted direct printing inside the review frame. Please click the 'Open in New Tab' button at the top-right of your screen to print this report directly."
+      );
+    }
   };
 
   return (
     <div className="space-y-6" id="sabbath-report-view">
+      {printError && (
+        <div className="bg-amber-50 border border-amber-205 text-amber-900 text-xs px-4 py-3 rounded-xl flex items-start gap-2.5 justify-between max-w-2xl mx-auto non-printable animate-fade-in shadow-xs">
+          <div className="flex gap-2 text-left">
+            <span className="text-sm leading-none pt-0.5">⚠️</span>
+            <div>
+              <p className="font-bold">Printing within Sandbox Restricted</p>
+              <p className="text-[11px] text-amber-800 font-medium mt-0.5">{printError}</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setPrintError(null)} 
+            className="text-amber-500 hover:text-amber-700 font-bold self-start cursor-pointer text-[10px] uppercase font-mono px-1.5 py-0.5 hover:bg-amber-100/50 rounded shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Dynamic CSS styles injected specifically for standard A4 desktop printing */}
       <style>{`
         @media print {
@@ -242,24 +270,42 @@ export default function SabbathReport({ contributions, members, preferences }: S
             size: A4 portrait;
             margin: 8mm 10mm 8mm 10mm !important;
           }
-          body {
+          html, body {
             background: white !important;
             color: black !important;
-            font-size: 10px !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
           }
           
-          /* Hide EVERYTHING in the page during print by default */
-          body * {
+          /* Ensure all parent containers of the printable modal are visible as block and overflow normally */
+          #root, #church-app-root, #main-content-panel, #workspace-canvas, #tithe-tracker-section {
+            display: block !important;
+            visibility: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+          }
+          
+          /* Hide non-printable global areas securely using display: none */
+          aside, header, footer, #sidebar, #app-header, #app-footer, #read-only-banner, .non-printable, .print\\:hidden, [class*="print:hidden"] {
+            display: none !important;
+            visibility: hidden !important;
+          }
+
+          /* Hide other parallel workspace panels and tabs, so only the report card is printed */
+          #workspace-canvas > :not(#tithe-tracker-section),
+          #tithe-tracker-section > :not(#sabbath-report-modal) {
+            display: none !important;
             visibility: hidden !important;
           }
           
-          /* Make ONLY the Sabbath Report modal and its descendants visible */
-          #sabbath-report-modal,
-          #sabbath-report-modal * {
-            visibility: visible !important;
-          }
-          
-          /* Pull the modal out of the normal layout flow and start at the top-left of the first printable page */
+          /* Position the report modal to overlay exactly over the print canvas */
           #sabbath-report-modal {
             position: absolute !important;
             left: 0 !important;
@@ -272,10 +318,11 @@ export default function SabbathReport({ contributions, members, preferences }: S
             display: block !important;
             overflow: visible !important;
             z-index: 9999999 !important;
+            visibility: visible !important;
           }
           
           #sabbath-report-modal-content {
-            position: absolute !important;
+            position: relative !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
@@ -287,21 +334,8 @@ export default function SabbathReport({ contributions, members, preferences }: S
             padding: 0 !important;
             display: block !important;
             overflow: visible !important;
-          }
-          
-          /* Force page and outer parent wrappers of modal to overflow normally */
-          html, body, #church-app-root, #main-content-panel, #workspace-canvas, #tithe-tracker-section {
-            height: auto !important;
-            overflow: visible !important;
             background: white !important;
-          }
-          
-          /* Hide non-printable elements completely to prevent blank margins/spacers */
-          .non-printable, 
-          .print\\:hidden,
-          button,
-          [class*="print:hidden"] {
-            display: none !important;
+            visibility: visible !important;
           }
           
           /* Fill report completely */
@@ -334,21 +368,21 @@ export default function SabbathReport({ contributions, members, preferences }: S
           .printable-header {
             border-bottom: 2px solid #0f172a !important;
             padding-bottom: 6px !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 15px !important;
           }
           
           /* Override spacing of elements */
           .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 8px !important;
+            margin-top: 10px !important;
           }
           .space-y-4 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 6px !important;
+            margin-top: 8px !important;
           }
           .space-y-3 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 4px !important;
+            margin-top: 6px !important;
           }
           .space-y-2.5 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 3px !important;
+            margin-top: 5px !important;
           }
           .divide-y > :not([hidden]) ~ :not([hidden]) {
             border-top-width: 1px !important;
@@ -356,49 +390,49 @@ export default function SabbathReport({ contributions, members, preferences }: S
           
           /* Specific layouts scaling and padding */
           .grid {
-            gap: 8px !important;
+            gap: 10px !important;
           }
           .p-4 {
-            padding: 6px 10px !important;
+            padding: 8px 12px !important;
           }
           .p-6, .p-8 {
-            padding: 8px 10px !important;
+            padding: 10px 14px !important;
           }
           .pt-8 {
-            padding-top: 10px !important;
+            padding-top: 12px !important;
           }
           .pb-6 {
-            padding-bottom: 6px !important;
+            padding-bottom: 8px !important;
           }
           .mt-12 {
-            margin-top: 10px !important;
+            margin-top: 15px !important;
           }
           .mt-1 {
-            margin-top: 2px !important;
+            margin-top: 3px !important;
           }
           .mb-3 {
-            margin-bottom: 4px !important;
+            margin-bottom: 6px !important;
           }
           
           /* General typography compression */
           h1, .text-base {
-            font-size: 11px !important;
+            font-size: 14px !important;
             line-height: normal !important;
           }
           h2, .text-sm {
-            font-size: 9.5px !important;
+            font-size: 12.5px !important;
             line-height: normal !important;
           }
           h3, h4, .text-xs, .text-\[11px\], .text-\[10px\], .text-\[9px\] {
-            font-size: 8px !important;
+            font-size: 11px !important;
             line-height: normal !important;
           }
           span, p, td, th {
-            font-size: 8px !important;
+            font-size: 11px !important;
             line-height: normal !important;
           }
           .text-lg {
-            font-size: 11px !important;
+            font-size: 14px !important;
             line-height: normal !important;
           }
           /* Stat card value display metric sizes */
@@ -406,29 +440,29 @@ export default function SabbathReport({ contributions, members, preferences }: S
           .text-base.font-mono,
           td .text-emerald-600,
           span .text-emerald-600 {
-            font-size: 10px !important;
+            font-size: 13px !important;
             font-weight: 900 !important;
           }
           
           /* Signatures block compression */
           #signatures-block {
-            margin-top: 12px !important;
-            padding-top: 10px !important;
-            gap: 12px !important;
+            margin-top: 15px !important;
+            padding-top: 12px !important;
+            gap: 15px !important;
             border-top-width: 1px !important;
           }
           #signatures-block > .space-y-6 {
             margin-top: 0 !important;
           }
           #signatures-block .h-10 {
-            height: 18px !important;
+            height: 24px !important;
           }
           #signatures-block .text-xs {
-            font-size: 8px !important;
+            font-size: 11px !important;
             font-weight: 800 !important;
           }
           #signatures-block .text-\[10px\] {
-            font-size: 7.5px !important;
+            font-size: 10.5px !important;
             margin-top: 2px !important;
           }
           
@@ -446,7 +480,7 @@ export default function SabbathReport({ contributions, members, preferences }: S
           }
           
           .compact-text {
-            font-size: 10px !important;
+            font-size: 13px !important;
             color: black !important;
           }
         }
