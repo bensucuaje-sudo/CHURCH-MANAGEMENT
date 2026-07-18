@@ -13,7 +13,19 @@ import TitheTracker from './components/TitheTracker';
 import ReceiptPrinter from './components/ReceiptPrinter';
 import ChurchConfig from './components/ChurchConfig';
 import AdminPortal from './components/AdminPortal';
-import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download, X, Lock, ExternalLink } from 'lucide-react';
+import { Database, LayoutDashboard, Users, CreditCard, Settings, Landmark, FileText, Heart, ShieldAlert, Eye, ShieldCheck, Download, X, Lock, ExternalLink, Cloud, ArrowUpDown, CloudLightning } from 'lucide-react';
+import { supabase } from './supabaseClient';
+import {
+  isSupabaseConfigured,
+  dbFetchMembers,
+  dbUpsertMember,
+  dbDeleteMember,
+  dbFetchContributions,
+  dbUpsertContribution,
+  dbDeleteContribution,
+  dbFetchPreferences,
+  dbUpsertPreferences
+} from './lib/supabase';
 
 const sdaLogo = '/sda-logo.png';
 
@@ -147,6 +159,130 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
 
+  // Supabase Sync & Authentication States
+  const [isDbLoading, setIsDbLoading] = useState<boolean>(false);
+  const [dbSyncError, setDbSyncError] = useState<string | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<any>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  // Supabase Auth Session listener
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSupabaseUser(session?.user ?? null);
+      if (session?.user) {
+        setIsAdmin(true);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupabaseUser(session?.user ?? null);
+      if (session?.user) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Fetch data from Supabase on mount / session change
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    async function loadData() {
+      try {
+        setIsDbLoading(true);
+        setDbSyncError(null);
+
+        let dbMembers: Member[] = [];
+        let dbContributions: Contribution[] = [];
+        let dbPreferences: ChurchPreferences | null = null;
+        let membersError: any = null;
+        let contributionsError: any = null;
+        let preferencesError: any = null;
+
+        try {
+          dbMembers = await dbFetchMembers();
+        } catch (err: any) {
+          membersError = err;
+          console.warn("Failed to load members from Supabase. Falling back to local storage.", err);
+        }
+
+        try {
+          dbContributions = await dbFetchContributions();
+        } catch (err: any) {
+          contributionsError = err;
+          console.warn("Failed to load contributions from Supabase. Falling back to local storage.", err);
+        }
+
+        try {
+          dbPreferences = await dbFetchPreferences();
+        } catch (err: any) {
+          preferencesError = err;
+          console.warn("Failed to load preferences from Supabase. Falling back to local storage.", err);
+        }
+
+        if (membersError || contributionsError || preferencesError) {
+          const parts = [];
+          if (membersError) parts.push("Members");
+          if (contributionsError) parts.push("Contributions");
+          if (preferencesError) parts.push("Preferences");
+          setDbSyncError(`Unable to sync ${parts.join(", ")} tables from Supabase. This usually means the tables do not exist yet. Using local sandbox fallback.`);
+        }
+
+        let hasData = false;
+        if (!membersError && dbMembers && dbMembers.length > 0) {
+          setMembers(dbMembers);
+          hasData = true;
+        }
+        if (!contributionsError && dbContributions && dbContributions.length > 0) {
+          setContributions(dbContributions);
+          hasData = true;
+        }
+        if (!preferencesError && dbPreferences) {
+          setPreferences(dbPreferences);
+          hasData = true;
+        }
+
+        // Auto sync local storage to Supabase ONLY if Supabase loaded successfully with no errors AND is totally empty
+        if (!membersError && !contributionsError && !preferencesError && !hasData) {
+          console.log("No data found in Supabase. Backing up local sandbox...");
+          for (const m of members) {
+            try {
+              await dbUpsertMember(m);
+            } catch (err) {
+              console.warn("Could not auto-sync member to Supabase:", err);
+            }
+          }
+          for (const c of contributions) {
+            try {
+              await dbUpsertContribution(c);
+            } catch (err) {
+              console.warn("Could not auto-sync contribution to Supabase:", err);
+            }
+          }
+          try {
+            await dbUpsertPreferences(preferences);
+          } catch (err) {
+            console.warn("Could not auto-sync preferences to Supabase:", err);
+          }
+        }
+      } catch (err: any) {
+        console.warn("General error in Supabase loader:", err);
+        setDbSyncError(err.message || "Failed to load database from Supabase.");
+      } finally {
+        setIsDbLoading(false);
+      }
+    }
+
+    loadData();
+  }, [supabaseUser]);
+
   // Sync to localStorage on any data changes
   useEffect(() => {
     localStorage.setItem('church_members', JSON.stringify(members));
@@ -165,7 +301,7 @@ export default function App() {
   }, [isAdmin]);
 
   // 3. Action Handlers
-  const handleAddMember = (newMemData: Omit<Member, 'id'>) => {
+  const handleAddMember = async (newMemData: Omit<Member, 'id'>) => {
     const maxId = members.reduce((max, m) => {
       const num = parseInt(m.id.replace('M-', ''));
       return isNaN(num) ? max : Math.max(max, num);
@@ -175,12 +311,20 @@ export default function App() {
       id: `M-${maxId + 1}`
     };
     setMembers([newMember, ...members]);
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbUpsertMember(newMember);
+      } catch (err: any) {
+        alert("Error saving member to Supabase: " + err.message);
+      }
+    }
   };
 
-  const handleUpdateMember = (updatedMember: Member) => {
+  const handleUpdateMember = async (updatedMember: Member) => {
     setMembers(members.map(m => (m.id === updatedMember.id ? updatedMember : m)));
     // Also update cached member name in contributions to keep reporting aligned
-    setContributions(contributions.map(c => {
+    const updatedContribs = contributions.map(c => {
       if (c.memberId === updatedMember.id) {
         return {
           ...c,
@@ -188,10 +332,25 @@ export default function App() {
         };
       }
       return c;
-    }));
+    });
+    setContributions(updatedContribs);
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbUpsertMember(updatedMember);
+        // Sync modified contributions in Supabase
+        for (const c of updatedContribs) {
+          if (c.memberId === updatedMember.id) {
+            await dbUpsertContribution(c);
+          }
+        }
+      } catch (err: any) {
+        alert("Error updating member in Supabase: " + err.message);
+      }
+    }
   };
 
-  const handleAddContribution = (newContribData: Omit<Contribution, 'id'>) => {
+  const handleAddContribution = async (newContribData: Omit<Contribution, 'id'>) => {
     const maxId = contributions.reduce((max, c) => {
       const num = parseInt(c.id.replace('C-', ''));
       return isNaN(num) ? max : Math.max(max, num);
@@ -201,20 +360,56 @@ export default function App() {
       id: `C-${maxId + 1}`
     };
     setContributions([newContrib, ...contributions]);
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbUpsertContribution(newContrib);
+      } catch (err: any) {
+        alert("Error saving contribution to Supabase: " + err.message);
+      }
+    }
   };
 
-  const handleDeleteContribution = (id: string) => {
+  const handleDeleteContribution = async (id: string) => {
     setContributions(contributions.filter(c => c.id !== id));
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbDeleteContribution(id);
+      } catch (err: any) {
+        alert("Error deleting contribution from Supabase: " + err.message);
+      }
+    }
   };
 
-  const handleDeleteMember = (id: string) => {
+  const handleDeleteMember = async (id: string) => {
     alert("Attempting to delete member: " + id);
     setMembers(members.filter(m => m.id !== id));
     setContributions(contributions.filter(c => c.memberId !== id));
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbDeleteMember(id);
+        const related = contributions.filter(c => c.memberId === id);
+        for (const r of related) {
+          await dbDeleteContribution(r.id);
+        }
+      } catch (err: any) {
+        alert("Error deleting member from Supabase: " + err.message);
+      }
+    }
   };
 
-  const handleUpdatePreferences = (updatedPref: ChurchPreferences) => {
+  const handleUpdatePreferences = async (updatedPref: ChurchPreferences) => {
     setPreferences(updatedPref);
+
+    if (isSupabaseConfigured) {
+      try {
+        await dbUpsertPreferences(updatedPref);
+      } catch (err: any) {
+        alert("Error saving preferences to Supabase: " + err.message);
+      }
+    }
   };
 
   const handleImportBackup = (data: { members: Member[]; contributions: Contribution[]; preferences: ChurchPreferences }) => {
@@ -387,8 +582,11 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (isAdmin) {
+                  if (isSupabaseConfigured && supabase) {
+                    await supabase.auth.signOut();
+                  }
                   setIsAdmin(false);
                 } else {
                   setLoginUsername('');
@@ -439,6 +637,34 @@ export default function App() {
                   Welcome to the {preferences.churchName} steward workspace. Manage members directory, record weekly devotional tithes, configure ratio-based segment plans, print verified tax-deductible certificates, and export records live to Excel CSV.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Supabase Missing Tables Warning Banner */}
+          {isSupabaseConfigured && dbSyncError && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start justify-between gap-3 text-slate-800 animate-fade-in" id="db-sync-warning-banner">
+              <div className="flex items-start gap-3">
+                <CloudLightning className="text-blue-600 shrink-0 mt-0.5" size={18} />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-blue-900 flex items-center gap-1.5">
+                    Supabase Tables Not Detected
+                  </h4>
+                  <p className="text-[11px] text-slate-605 leading-relaxed font-normal">
+                    You have configured Supabase connection keys, but the database tables (<code>members</code>, <code>contributions</code>, or <code>preferences</code>) are not yet created in your Supabase project. 
+                    The application is automatically falling back to your <strong>Local Sandbox Sandbox</strong> so you won't lose any data.
+                  </p>
+                  <p className="text-[10px] text-blue-700 font-semibold pt-1">
+                    👉 Go to <button onClick={() => setActiveTab('config')} className="underline font-bold hover:text-blue-800 transition cursor-pointer">System Management</button> to copy the SQL schema code and run it in your Supabase SQL Editor.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDbSyncError(null)}
+                className="text-slate-400 hover:text-slate-600 transition p-1 cursor-pointer"
+                title="Dismiss"
+              >
+                <X size={14} />
+              </button>
             </div>
           )}
 
@@ -619,22 +845,82 @@ export default function App() {
             </div>
 
             {/* Login Form Body */}
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
-              if (loginUsername === 'admin' && loginPassword === 'password123') {
-                setIsAdmin(true);
-                setShowLoginModal(false);
-                setLoginUsername('');
-                setLoginPassword('');
-                setLoginError('');
+              setLoginError('');
+              if (isSupabaseConfigured && supabase) {
+                try {
+                  if (authMode === 'login') {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                      email: loginUsername,
+                      password: loginPassword,
+                    });
+                    if (error) throw error;
+                    
+                    setIsAdmin(true);
+                    setShowLoginModal(false);
+                    setLoginUsername('');
+                    setLoginPassword('');
+                    
+                    // Redirect the user to the Home page ("/")
+                    setActiveTab('dashboard');
+                    window.history.pushState(null, '', '/');
+                  } else {
+                    const { data, error } = await supabase.auth.signUp({
+                      email: loginUsername,
+                      password: loginPassword,
+                    });
+                    if (error) throw error;
+                    alert("Registration successful! You can now log in using these credentials.");
+                    setAuthMode('login');
+                  }
+                } catch (err: any) {
+                  // If Supabase returns an error, show a small error message under the form
+                  setLoginError(err.message || 'Authentication failed.');
+                }
               } else {
-                setLoginError('Invalid Administrator credentials.');
+                if (loginUsername === 'admin' && loginPassword === 'password123') {
+                  setIsAdmin(true);
+                  setShowLoginModal(false);
+                  setLoginUsername('');
+                  setLoginPassword('');
+                  setLoginError('');
+                  
+                  // Redirect the user to the Home page ("/")
+                  setActiveTab('dashboard');
+                  window.history.pushState(null, '', '/');
+                } else {
+                  setLoginError('Invalid Administrator credentials.');
+                }
               }
             }} className="p-5 space-y-4">
               
-              <p className="text-[11px] text-slate-500 leading-normal">
-                Please enter your authorized administrative credentials to activate writing privilege on members, givers, collections, and allotments.
-              </p>
+              {isSupabaseConfigured ? (
+                <div className="flex border-b border-slate-100 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setLoginError(''); }}
+                    className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
+                      authMode === 'login' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('register'); setLoginError(''); }}
+                    className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
+                      authMode === 'register' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Register Admin
+                  </button>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500 leading-normal">
+                  Please enter your authorized administrative credentials to activate writing privilege on members, givers, collections, and allotments.
+                </p>
+              )}
 
               {loginError && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
@@ -645,11 +931,13 @@ export default function App() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Username</label>
+                  <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">
+                    {isSupabaseConfigured ? 'Email Address' : 'Username'}
+                  </label>
                   <input
-                    type="text"
+                    type={isSupabaseConfigured ? 'email' : 'text'}
                     required
-                    placeholder="Enter Username"
+                    placeholder={isSupabaseConfigured ? 'admin@church.org' : 'Enter Username'}
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
@@ -670,6 +958,12 @@ export default function App() {
                 </div>
               </div>
 
+              {!isSupabaseConfigured && (
+                <div className="bg-amber-50 border border-amber-100 p-2.5 rounded-lg text-[10px] text-amber-800 leading-normal">
+                  💡 <strong>Supabase is currently unconfigured.</strong> Using local credentials fallback (<code>admin</code> / <code>password123</code>).
+                </div>
+              )}
+
               {/* Actions */}
               <div className="pt-1 flex gap-2">
                 <button
@@ -683,7 +977,9 @@ export default function App() {
                   type="submit"
                   className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer text-center font-sans"
                 >
-                  Confirm Login
+                  {isSupabaseConfigured 
+                    ? (authMode === 'login' ? 'Sign In' : 'Register')
+                    : 'Confirm Login'}
                 </button>
               </div>
 

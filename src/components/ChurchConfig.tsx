@@ -5,8 +5,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { ChurchPreferences, CombinedOfferingAllocation, Member, Contribution } from '../types';
-import { Settings, ShieldCheck, HeartCrack, Plus, Trash2, HelpCircle } from 'lucide-react';
+import { Settings, ShieldCheck, HeartCrack, Plus, Trash2, HelpCircle, Database, Cloud, Key, Copy, Check } from 'lucide-react';
 import AdminPortal from './AdminPortal';
+import { isSupabaseConfigured, getSupabaseSqlSetupCode } from '../lib/supabase';
 
 interface ChurchConfigProps {
   preferences: ChurchPreferences;
@@ -32,6 +33,8 @@ export default function ChurchConfig({
   const [churchAddress, setChurchAddress] = useState(preferences.churchAddress);
   const [churchEmail, setChurchEmail] = useState(preferences.churchEmail);
   const [currency, setCurrency] = useState(preferences.currency);
+  const [showSql, setShowSql] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   // Allocations list copy
   const [allocations, setAllocations] = useState<CombinedOfferingAllocation[]>([...preferences.combinedOfferingAllocations]);
@@ -182,8 +185,81 @@ export default function ChurchConfig({
               )}
             </div>
 
-            {/* Data Management Section */}
-            {/* Removed as requested */}
+            {/* Supabase Cloud Connection Panel */}
+            <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-xs space-y-4">
+              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
+                <Database size={16} className="text-blue-500" />
+                Supabase Integration
+              </h2>
+
+              {isSupabaseConfigured ? (
+                <div className="space-y-3">
+                  <div className="bg-emerald-50 border border-emerald-200/50 p-3 rounded-xl flex items-start gap-2.5">
+                    <Cloud className="text-emerald-600 shrink-0 mt-0.5" size={16} />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-emerald-800">Connected to Cloud</p>
+                      <p className="text-[10px] text-emerald-650 leading-relaxed font-normal">
+                        All member registries, givers, weekly tithes, and systematically calculated offerings are synchronized in real-time.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-150">
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Endpoint:</span>
+                      <span className="font-mono truncate max-w-[130px]" title={(import.meta as any).env?.VITE_SUPABASE_URL || ''}>
+                        {(import.meta as any).env?.VITE_SUPABASE_URL || ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Security:</span>
+                      <span className="text-emerald-600 font-bold">Enabled (RLS)</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex items-start gap-2.5 text-amber-900">
+                    <Cloud className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold">Local Sandbox Fallback</h4>
+                      <p className="text-[10px] text-slate-605 leading-relaxed font-normal">
+                        Supabase keys are currently unconfigured. Add <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to your environment variables to save data live in the cloud.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code = getSupabaseSqlSetupCode();
+                        navigator.clipboard.writeText(code);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-3xs transition cursor-pointer"
+                    >
+                      {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                      <span>{copied ? "SQL Schema Copied!" : "Copy Supabase SQL Setup"}</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setShowSql(!showSql)}
+                      className="w-full text-center text-[10px] font-bold text-blue-600 hover:text-blue-700 mt-2 block transition hover:underline"
+                    >
+                      {showSql ? "Hide SQL Setup Instructions" : "View SQL Setup Instructions"}
+                    </button>
+
+                    {showSql && (
+                      <div className="mt-2 bg-slate-950 text-slate-200 p-3 rounded-lg border border-slate-800 font-mono text-[9px] max-h-[160px] overflow-y-auto whitespace-pre leading-relaxed select-all">
+                        {getSupabaseSqlSetupCode()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
         </div>
 
         {/* Right column stacking all configs */}
