@@ -153,8 +153,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false); // Always default to false (View-Only Mode) on load
   const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
 
-  // Admin Verification credentials modal state
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  // Admin Verification credentials state
   const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
@@ -164,6 +163,17 @@ export default function App() {
   const [dbSyncError, setDbSyncError] = useState<string | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<any>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  // OAuth Popup Handler & Redirect Interceptor
+  useEffect(() => {
+    const isCallback = window.location.hash.includes('access_token=') || 
+                       window.location.hash.includes('id_token=') ||
+                       window.location.search.includes('code=');
+    if (window.opener && isCallback) {
+      window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS' }, '*');
+      window.close();
+    }
+  }, []);
 
   // Supabase Auth Session listener
   useEffect(() => {
@@ -185,10 +195,55 @@ export default function App() {
       }
     });
 
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SUPABASE_AUTH_SUCCESS') {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            setSupabaseUser(session.user);
+            setIsAdmin(true);
+            setActiveTab('dashboard');
+            window.history.pushState(null, '', '/');
+          }
+        });
+      }
+    };
+    window.addEventListener('message', handleOAuthMessage);
+
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('message', handleOAuthMessage);
     };
   }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoginError('');
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error('Supabase is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.');
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        const popup = window.open(data.url, 'google_oauth_popup', 'width=600,height=700');
+        if (!popup) {
+          alert('Please allow popups for this site to log in with Google.');
+        }
+      } else {
+        throw new Error('No login URL returned from Supabase.');
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Google Authentication failed.');
+    }
+  };
 
   // Fetch data from Supabase on mount / session change
   useEffect(() => {
@@ -433,6 +488,174 @@ export default function App() {
   const aggregateOfferings = contributions.reduce((sum, c) => sum + c.combinedOffering, 0);
   const aggregateTotal = contributions.reduce((sum, c) => sum + c.total, 0);
 
+  if (!isAdmin) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden" id="church-auth-root">
+        {/* Decorative ambient background blur */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.15)_0,transparent_60%)] pointer-events-none" />
+        
+        <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden relative z-10 animate-fade-in" id="login-card">
+          <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-5 py-4 text-white flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-lg">
+              <ShieldCheck size={18} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black tracking-tight uppercase">Admin Authentication</h3>
+              <p className="text-[10px] text-rose-100/90 font-medium font-sans">Ledger Access Key Required</p>
+            </div>
+          </div>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoginError('');
+            if (!isSupabaseConfigured || !supabase) {
+              setLoginError('Supabase is not configured yet. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.');
+              return;
+            }
+            try {
+              if (authMode === 'login') {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                  email: loginUsername,
+                  password: loginPassword,
+                });
+                if (error) throw error;
+                setIsAdmin(true);
+                setLoginUsername('');
+                setLoginPassword('');
+                setActiveTab('dashboard');
+                window.history.pushState(null, '', '/');
+              } else {
+                const { data, error } = await supabase.auth.signUp({
+                  email: loginUsername,
+                  password: loginPassword,
+                });
+                if (error) throw error;
+                alert("Registration successful! You can now log in using these credentials.");
+                setAuthMode('login');
+              }
+            } catch (err: any) {
+              setLoginError(err.message || 'Authentication failed.');
+            }
+          }} className="p-5 space-y-4">
+            
+            <div className="flex border-b border-slate-100 mb-2">
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setLoginError(''); }}
+                className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
+                  authMode === 'login' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('register'); setLoginError(''); }}
+                className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
+                  authMode === 'register' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                Register Admin
+              </button>
+            </div>
+
+            {loginError && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+                <ShieldAlert size={13} className="shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="admin@church.org"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            {!isSupabaseConfigured && (
+              <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-[10px] text-amber-800 leading-normal font-sans">
+                💡 <strong>Supabase is currently unconfigured.</strong> Please configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in the settings menu or .env to enable authentication and synchronization.
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="pt-1 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginUsername('');
+                  setLoginPassword('');
+                  setLoginError('');
+                }}
+                className="flex-1 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer text-center font-sans"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer text-center font-sans"
+              >
+                {authMode === 'login' ? 'Sign In' : 'Register'}
+              </button>
+            </div>
+
+            <div className="relative my-2 flex items-center justify-center">
+              <div className="absolute inset-x-0 border-t border-slate-100"></div>
+              <span className="relative bg-white px-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">or</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer flex items-center justify-center gap-2 font-sans"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.66-.23-1.25-.61-1.67-1.11z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              Continue with Google
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-slate-50 flex font-sans text-slate-900 overflow-hidden print:overflow-visible print:h-auto" id="church-app-root">
       {/* LEFT SIDEBAR (HIDDEN when browser printing activates) */}
@@ -563,56 +786,23 @@ export default function App() {
 
           {/* Secure Admin Control Panel Toggle */}
           <div className="flex items-center gap-3">
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
-              isAdmin 
-                ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                : 'bg-amber-50 text-amber-700 border-amber-200'
-            }`}>
-              {isAdmin ? (
-                <>
-                  <ShieldCheck size={14} className="text-rose-500" />
-                  <span className="text text-[10px] font-bold uppercase tracking-wider">ADMIN MODE • Full Access</span>
-                </>
-              ) : (
-                <>
-                  <Eye size={14} className="text-amber-500" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">VIEW ONLY MODE • Locked</span>
-                </>
-              )}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200">
+              <ShieldCheck size={14} className="text-rose-500" />
+              <span className="text text-[10px] font-bold uppercase tracking-wider">ADMIN MODE • Full Access</span>
             </div>
 
             <button
               onClick={async () => {
-                if (isAdmin) {
-                  if (isSupabaseConfigured && supabase) {
-                    await supabase.auth.signOut();
-                  }
-                  setIsAdmin(false);
-                } else {
-                  setLoginUsername('');
-                  setLoginPassword('');
-                  setLoginError('');
-                  setShowLoginModal(true);
+                if (isSupabaseConfigured && supabase) {
+                  await supabase.auth.signOut();
                 }
+                setIsAdmin(false);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight shadow-3xs cursor-pointer transition-all flex items-center gap-1.5 border ${
-                isAdmin 
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' 
-                  : 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500'
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight shadow-3xs cursor-pointer transition-all flex items-center gap-1.5 border bg-rose-600 hover:bg-rose-700 text-white border-rose-500"
               id="role-mode-toggle"
             >
-              {isAdmin ? (
-                <>
-                  <Eye size={13} />
-                  <span>Switch to View Mode</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck size={14} />
-                  <span>Switch to Admin Mode</span>
-                </>
-              )}
+              <Lock size={13} />
+              <span>Sign Out</span>
             </button>
           </div>
         </header>
@@ -668,18 +858,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Global Read-Only Mode Banner Header across sections when viewing locked */}
-          {!isAdmin && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3 text-amber-900 animate-fade-in" id="read-only-banner">
-              <ShieldAlert className="text-amber-600 shrink-0 mt-0.5" size={16} />
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold">RECIPIENTS WORKSPACE IN READ-ONLY VIEW MODE</h4>
-                <p className="text-[11px] text-slate-605 leading-relaxed font-normal">
-                  All transactional edits, ledger additions, setting ratios, and registration structures are securely restricted. To add, edit or modify database collections, please toggle <strong>Admin Mode</strong> inside the top toolbar.
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Main workspace displays */}
 
           {/* Tab content routes */}
           {activeTab === 'dashboard' && (
@@ -828,165 +1007,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ADMIN PORTAL AUTHENTICATION MODAL */}
-      {showLoginModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in" id="admin-login-modal">
-          <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl border border-slate-100 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-5 py-4 text-white flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-lg">
-                <ShieldCheck size={18} className="text-white" />
-              </div>
-              <div>
-                <h3 className="text-xs font-black tracking-tight uppercase">Admin Authentication</h3>
-                <p className="text-[10px] text-rose-100/90 font-medium font-sans">Ledger Access Key Required</p>
-              </div>
-            </div>
-
-            {/* Login Form Body */}
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setLoginError('');
-              if (isSupabaseConfigured && supabase) {
-                try {
-                  if (authMode === 'login') {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                      email: loginUsername,
-                      password: loginPassword,
-                    });
-                    if (error) throw error;
-                    
-                    setIsAdmin(true);
-                    setShowLoginModal(false);
-                    setLoginUsername('');
-                    setLoginPassword('');
-                    
-                    // Redirect the user to the Home page ("/")
-                    setActiveTab('dashboard');
-                    window.history.pushState(null, '', '/');
-                  } else {
-                    const { data, error } = await supabase.auth.signUp({
-                      email: loginUsername,
-                      password: loginPassword,
-                    });
-                    if (error) throw error;
-                    alert("Registration successful! You can now log in using these credentials.");
-                    setAuthMode('login');
-                  }
-                } catch (err: any) {
-                  // If Supabase returns an error, show a small error message under the form
-                  setLoginError(err.message || 'Authentication failed.');
-                }
-              } else {
-                if (loginUsername === 'admin' && loginPassword === 'password123') {
-                  setIsAdmin(true);
-                  setShowLoginModal(false);
-                  setLoginUsername('');
-                  setLoginPassword('');
-                  setLoginError('');
-                  
-                  // Redirect the user to the Home page ("/")
-                  setActiveTab('dashboard');
-                  window.history.pushState(null, '', '/');
-                } else {
-                  setLoginError('Invalid Administrator credentials.');
-                }
-              }
-            }} className="p-5 space-y-4">
-              
-              {isSupabaseConfigured ? (
-                <div className="flex border-b border-slate-100 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('login'); setLoginError(''); }}
-                    className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
-                      authMode === 'login' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('register'); setLoginError(''); }}
-                    className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
-                      authMode === 'register' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    Register Admin
-                  </button>
-                </div>
-              ) : (
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  Please enter your authorized administrative credentials to activate writing privilege on members, givers, collections, and allotments.
-                </p>
-              )}
-
-              {loginError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
-                  <ShieldAlert size={13} className="shrink-0" />
-                  <span>{loginError}</span>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">
-                    {isSupabaseConfigured ? 'Email Address' : 'Username'}
-                  </label>
-                  <input
-                    type={isSupabaseConfigured ? 'email' : 'text'}
-                    required
-                    placeholder={isSupabaseConfigured ? 'admin@church.org' : 'Enter Username'}
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
-                    autoFocus
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Password</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              {!isSupabaseConfigured && (
-                <div className="bg-amber-50 border border-amber-100 p-2.5 rounded-lg text-[10px] text-amber-800 leading-normal">
-                  💡 <strong>Supabase is currently unconfigured.</strong> Using local credentials fallback (<code>admin</code> / <code>password123</code>).
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="pt-1 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLoginModal(false)}
-                  className="flex-1 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer text-center font-sans"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer text-center font-sans"
-                >
-                  {isSupabaseConfigured 
-                    ? (authMode === 'login' ? 'Sign In' : 'Register')
-                    : 'Confirm Login'}
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Authenticated content views completed */}
 
     </div>
   );
