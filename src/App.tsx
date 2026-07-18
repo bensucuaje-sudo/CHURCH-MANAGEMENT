@@ -492,16 +492,15 @@ export default function App() {
     return (
       <div className="h-screen w-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden" id="church-auth-root">
         {/* Decorative ambient background blur */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(225,29,72,0.15)_0,transparent_60%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.15)_0,transparent_60%)] pointer-events-none" />
         
         <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden relative z-10 animate-fade-in" id="login-card">
-          <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-5 py-4 text-white flex items-center gap-3">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-lg">
               <ShieldCheck size={18} className="text-white" />
             </div>
             <div>
               <h3 className="text-xs font-black tracking-tight uppercase">Admin Authentication</h3>
-              <p className="text-[10px] text-rose-100/90 font-medium font-sans">Ledger Access Key Required</p>
             </div>
           </div>
           
@@ -538,25 +537,10 @@ export default function App() {
             }
           }} className="p-5 space-y-4">
             
-            <div className="flex border-b border-slate-100 mb-2">
-              <button
-                type="button"
-                onClick={() => { setAuthMode('login'); setLoginError(''); }}
-                className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
-                  authMode === 'login' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-              >
+            <div className="border-b border-slate-100 pb-2 mb-2">
+              <h4 className="text-xs font-bold text-slate-800 text-center uppercase tracking-wider">
                 Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAuthMode('register'); setLoginError(''); }}
-                className={`flex-1 pb-2 text-xs font-bold text-center border-b-2 transition cursor-pointer ${
-                  authMode === 'register' ? 'border-rose-600 text-rose-600' : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                Register Admin
-              </button>
+              </h4>
             </div>
 
             {loginError && (
@@ -572,10 +556,10 @@ export default function App() {
                 <input
                   type="email"
                   required
-                  placeholder="admin@church.org"
+                  placeholder="sdasantotomascentral@gmail.com"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 transition-all font-mono"
                   autoFocus
                 />
               </div>
@@ -588,7 +572,7 @@ export default function App() {
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-rose-500 transition-all font-mono"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 transition-all font-mono"
                 />
               </div>
             </div>
@@ -614,7 +598,7 @@ export default function App() {
               </button>
               <button
                 type="submit"
-                className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer text-center font-sans"
+                className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-3xs transition hover:cursor-pointer text-center font-sans"
               >
                 {authMode === 'login' ? 'Sign In' : 'Register'}
               </button>
