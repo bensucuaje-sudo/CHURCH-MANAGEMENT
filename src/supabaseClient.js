@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (import.meta && import.meta.env && import.meta.env.VITE_SUPABASE_URL) || 'https://placeholder-url.supabase.co';
-const supabaseAnonKey = (import.meta && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) || 'placeholder-key';
+// =========================================================================
+// 💡 PASTE YOUR SUPABASE CONFIGURATION HERE
+// Replace the values below with your actual Supabase URL and Anon/Public Key.
+// =========================================================================
+export const SUPABASE_URL = "https://wekfavkjkmhoezmeakgx.supabase.co/rest/v1/";
+export const SUPABASE_PUBLIC_KEY = "sb_publishable_EkuA_7V_ykqQD4ckOZm3SA__qIdQWjH";
+// =========================================================================
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+

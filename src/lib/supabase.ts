@@ -1,14 +1,21 @@
 import { Member, Contribution, ChurchPreferences } from '../types';
-import { supabase } from '../supabaseClient';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLIC_KEY } from '../supabaseClient';
 
 export { supabase };
 
-// Read values from Vite environment variables
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+// Check if Supabase keys are configured either via env or via direct variables
+const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
-// Check if Supabase keys are configured
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+const isHardcodedValid = !!(
+  SUPABASE_URL && 
+  SUPABASE_PUBLIC_KEY && 
+  !SUPABASE_URL.includes('placeholder-url') && 
+  !SUPABASE_PUBLIC_KEY.includes('placeholder-key')
+);
+
+export const isSupabaseConfigured = !!(envUrl && envKey) || isHardcodedValid;
+
 
 
 /**
