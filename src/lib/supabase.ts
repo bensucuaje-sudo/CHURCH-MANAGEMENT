@@ -23,9 +23,13 @@ export const isSupabaseConfigured = !!(envUrl && envKey) || isHardcodedValid;
  * 
  * Copy and run this script in your Supabase SQL Editor to bootstrap the tables:
  * 
- * -- 1. Members Table
+ * -- 1. Enable UUID extension if not enabled
+ * create extension if not exists "uuid-ossp";
+ * 
+ * -- 2. Members Table
  * create table if not exists public.members (
- *   id text primary key,
+ *   id text not null,
+ *   user_id uuid not null default auth.uid(),
  *   name text not null,
  *   email text,
  *   phone text,
@@ -34,12 +38,14 @@ export const isSupabaseConfigured = !!(envUrl && envKey) || isHardcodedValid;
  *   status text,
  *   role text,
  *   notes text,
- *   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+ *   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+ *   primary key (id, user_id)
  * );
  * 
- * -- 2. Contributions Table
+ * -- 3. Contributions Table
  * create table if not exists public.contributions (
- *   id text primary key,
+ *   id text not null,
+ *   user_id uuid not null default auth.uid(),
  *   "memberId" text,
  *   "memberName" text,
  *   date text,
@@ -60,37 +66,44 @@ export const isSupabaseConfigured = !!(envUrl && envKey) || isHardcodedValid;
  *   "specifiedOffering" numeric default 0,
  *   "specifiedOfferingName" text,
  *   "copChurch" numeric default 0,
- *   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+ *   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+ *   primary key (id, user_id)
  * );
  * 
- * -- 3. Preferences Table
+ * -- 4. Preferences Table
  * create table if not exists public.preferences (
- *   id text primary key default 'church_config',
+ *   id text not null default 'church_config',
+ *   user_id uuid not null default auth.uid(),
  *   "churchName" text,
  *   "churchAddress" text,
  *   "churchEmail" text,
  *   currency text,
  *   "combinedOfferingAllocations" jsonb,
  *   "titheAllocations" jsonb,
- *   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+ *   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+ *   primary key (id, user_id)
  * );
  * 
- * -- Enable Row Level Security (RLS) or disable as needed for quick access
+ * -- Enable Row Level Security (RLS)
  * alter table public.members enable row level security;
  * alter table public.contributions enable row level security;
  * alter table public.preferences enable row level security;
  * 
  * -- Create basic public policies (allows authenticated users to CRUD, or anyone with anon key)
- * create policy "Allow public access to members" on public.members for all using (true) with check (true);
- * create policy "Allow public access to contributions" on public.contributions for all using (true) with check (true);
- * create policy "Allow public access to preferences" on public.preferences for all using (true) with check (true);
+ * create policy "Allow owners access to members" on public.members for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+ * create policy "Allow owners access to contributions" on public.contributions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+ * create policy "Allow owners access to preferences" on public.preferences for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
  */
 
 export const getSupabaseSqlSetupCode = () => {
   return `
--- 1. Members Table
+-- 1. Enable UUID extension if not enabled
+create extension if not exists "uuid-ossp";
+
+-- 2. Members Table
 create table if not exists public.members (
-  id text primary key,
+  id text not null,
+  user_id uuid not null default auth.uid(),
   name text not null,
   email text,
   phone text,
@@ -99,12 +112,14 @@ create table if not exists public.members (
   status text,
   role text,
   notes text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (id, user_id)
 );
 
--- 2. Contributions Table
+-- 3. Contributions Table
 create table if not exists public.contributions (
-  id text primary key,
+  id text not null,
+  user_id uuid not null default auth.uid(),
   "memberId" text,
   "memberName" text,
   date text,
@@ -125,39 +140,59 @@ create table if not exists public.contributions (
   "specifiedOffering" numeric default 0,
   "specifiedOfferingName" text,
   "copChurch" numeric default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (id, user_id)
 );
 
--- 3. Preferences Table
+-- 4. Preferences Table
 create table if not exists public.preferences (
-  id text primary key default 'church_config',
+  id text not null default 'church_config',
+  user_id uuid not null default auth.uid(),
   "churchName" text,
   "churchAddress" text,
   "churchEmail" text,
   currency text,
   "combinedOfferingAllocations" jsonb,
   "titheAllocations" jsonb,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (id, user_id)
 );
 
--- Enable RLS and setup access control policies
+-- Enable Row Level Security (RLS)
 alter table public.members enable row level security;
 alter table public.contributions enable row level security;
 alter table public.preferences enable row level security;
 
--- Create policies to allow all operations with Anon client (or restrict to authenticated)
-create policy "Allow public access to members" on public.members for all using (true) with check (true);
-create policy "Allow public access to contributions" on public.contributions for all using (true) with check (true);
-create policy "Allow public access to preferences" on public.preferences for all using (true) with check (true);
+-- Drop existing policies if any to prevent duplication
+drop policy if exists "Allow owners access to members" on public.members;
+drop policy if exists "Allow owners access to contributions" on public.contributions;
+drop policy if exists "Allow owners access to preferences" on public.preferences;
+drop policy if exists "Allow public access to members" on public.members;
+drop policy if exists "Allow public access to contributions" on public.contributions;
+drop policy if exists "Allow public access to preferences" on public.preferences;
+
+-- Create secure multi-tenant policies using auth.uid()
+create policy "Allow owners access to members" on public.members
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Allow owners access to contributions" on public.contributions
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "Allow owners access to preferences" on public.preferences
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
   `.trim();
 };
 
 // --- Members Database Helpers ---
 export async function dbFetchMembers(): Promise<Member[]> {
   if (!supabase) return [];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from('members')
     .select('*')
+    .eq('user_id', user.id)
     .order('name', { ascending: true });
   if (error) {
     console.warn('Error fetching members from Supabase:', error);
@@ -168,9 +203,15 @@ export async function dbFetchMembers(): Promise<Member[]> {
 
 export async function dbUpsertMember(member: Member): Promise<void> {
   if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authenticated session required to save members");
+
   const { error } = await supabase
     .from('members')
-    .upsert(member);
+    .upsert({
+      ...member,
+      user_id: user.id
+    });
   if (error) {
     console.error('Error upserting member to Supabase:', error);
     throw error;
@@ -179,10 +220,14 @@ export async function dbUpsertMember(member: Member): Promise<void> {
 
 export async function dbDeleteMember(id: string): Promise<void> {
   if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authenticated session required to delete members");
+
   const { error } = await supabase
     .from('members')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   if (error) {
     console.error('Error deleting member from Supabase:', error);
     throw error;
@@ -192,9 +237,13 @@ export async function dbDeleteMember(id: string): Promise<void> {
 // --- Contributions Database Helpers ---
 export async function dbFetchContributions(): Promise<Contribution[]> {
   if (!supabase) return [];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from('contributions')
     .select('*')
+    .eq('user_id', user.id)
     .order('date', { ascending: false });
   if (error) {
     console.warn('Error fetching contributions from Supabase:', error);
@@ -221,9 +270,15 @@ export async function dbFetchContributions(): Promise<Contribution[]> {
 
 export async function dbUpsertContribution(contribution: Contribution): Promise<void> {
   if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authenticated session required to save contributions");
+
   const { error } = await supabase
     .from('contributions')
-    .upsert(contribution);
+    .upsert({
+      ...contribution,
+      user_id: user.id
+    });
   if (error) {
     console.error('Error upserting contribution to Supabase:', error);
     throw error;
@@ -232,10 +287,14 @@ export async function dbUpsertContribution(contribution: Contribution): Promise<
 
 export async function dbDeleteContribution(id: string): Promise<void> {
   if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authenticated session required to delete contributions");
+
   const { error } = await supabase
     .from('contributions')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   if (error) {
     console.error('Error deleting contribution from Supabase:', error);
     throw error;
@@ -245,10 +304,14 @@ export async function dbDeleteContribution(id: string): Promise<void> {
 // --- Preferences Database Helpers ---
 export async function dbFetchPreferences(): Promise<ChurchPreferences | null> {
   if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from('preferences')
     .select('*')
     .eq('id', 'church_config')
+    .eq('user_id', user.id)
     .single();
   if (error) {
     if (error.code === 'PGRST116') {
@@ -263,10 +326,14 @@ export async function dbFetchPreferences(): Promise<ChurchPreferences | null> {
 
 export async function dbUpsertPreferences(preferences: ChurchPreferences): Promise<void> {
   if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Authenticated session required to save preferences");
+
   const { error } = await supabase
     .from('preferences')
     .upsert({
       id: 'church_config',
+      user_id: user.id,
       churchName: preferences.churchName,
       churchAddress: preferences.churchAddress,
       churchEmail: preferences.churchEmail,
